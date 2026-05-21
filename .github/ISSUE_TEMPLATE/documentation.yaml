@@ -1,0 +1,37 @@
+name: Documentation
+description: Request documentation changes or improvements
+title: "[Documentation]: "
+labels:
+  - documentation
+body:
+  - type: textarea
+    id: topic
+    attributes:
+      label: Topic
+      description: Which part of the documentation should be changed?
+    validations:
+      required: true
+
+  - type: textarea
+    id: change
+    attributes:
+      label: Requested change
+      description: What should be added, updated, or clarified?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reason
+    attributes:
+      label: Reason
+      description: Why is this documentation change needed?
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Add links, examples, or screenshots if relevant.
+    validations:
+      required: false
