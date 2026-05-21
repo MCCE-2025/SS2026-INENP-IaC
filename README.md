@@ -30,4 +30,3 @@ Run Markdown linting for the whole repository:
 ```bash
 markdownlint-cli2 "**/*.md"
 ```
-
