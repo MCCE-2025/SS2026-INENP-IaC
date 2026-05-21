@@ -1,0 +1,16 @@
+name: Markdown lint
+
+on:
+  pull_request:
+  push:
+
+jobs:
+  markdown-lint:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4.2.2
+
+      - uses: DavidAnson/markdownlint-cli2-action@v19.1.0
+        with:
+          globs: "**/*.md"

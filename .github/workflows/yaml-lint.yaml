@@ -1,0 +1,16 @@
+name: YAML lint
+
+on:
+  pull_request:
+  push:
+
+jobs:
+  yaml-lint:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4.2.2
+
+      - uses: ibiqlik/action-yamllint@v3.1.1
+        with:
+          file_or_dir: .
