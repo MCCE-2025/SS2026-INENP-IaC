@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4.2.2
 
-      - uses: aquasecurity/trivy-action@0.29.0
+      - uses: aquasecurity/trivy-action@0.35.0
         with:
           scan-type: config
           scan-ref: .
