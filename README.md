@@ -16,7 +16,7 @@ and related resources for the project infrastructure.
 Install the required linters on macOS using Homebrew:
 
 ```bash
-brew install yamllint markdownlint-cli2
+brew install yamllint markdownlint-cli2 trivy
 ```
 
 Run YAML linting for the whole repository:
@@ -29,4 +29,10 @@ Run Markdown linting for the whole repository:
 
 ```bash
 markdownlint-cli2 "**/*.md"
+```
+
+Run Trivy configuration check:
+
+```bash
+trivy config .
 ```
