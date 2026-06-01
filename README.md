@@ -41,8 +41,9 @@ trivy config .
 
 This repository uses Terraform to provision the required cloud infrastructure.
 
-Before provisioning the main infrastructure, the Terraform backend must be bootstrapped.
-The bootstrap step creates the Google Cloud Storage bucket that will be used to store the Terraform remote state.
+Before provisioning the main infrastructure, the Terraform backend must be
+bootstrapped. The bootstrap step creates a Google Cloud Storage bucket for
+Terraform remote state.
 
 ### Install Terraform
 
@@ -50,8 +51,6 @@ Install Terraform on macOS using Homebrew:
 
 ```bash
 brew tap hashicorp/tap
-```
-```bash
 brew install hashicorp/tap/terraform
 ```
 
@@ -94,5 +93,5 @@ This bucket will be used as the remote backend for storing the Terraform state.
 
 ### Result
 
-After the bootstrap step has completed successfully, the project is ready to use remote Terraform state stored in Google Cloud Storage.
-
+After the bootstrap step has completed successfully, the project is ready to use
+remote Terraform state stored in Google Cloud Storage.
