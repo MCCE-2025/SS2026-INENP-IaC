@@ -1,10 +1,5 @@
 variable "project_id" { type = string }
 
-variable "state_bucket_prefix" {
-  type        = string
-  description = "Prefix for the Terraform state bucket; a random suffix is appended for global uniqueness."
-  default     = "terraform-state-ss2026"
-}
 variable "region" {
   type    = string
   default = "europe-west3"
