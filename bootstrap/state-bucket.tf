@@ -1,5 +1,9 @@
+resource "random_id" "tf_state_bucket" {
+  byte_length = 4
+}
+
 resource "google_storage_bucket" "tf_state" {
-  name     = "terraform-state-bucket-ss2026"
+  name     = "${var.state_bucket_prefix}-${random_id.tf_state_bucket.hex}"
   location = var.region
 
   uniform_bucket_level_access = true
