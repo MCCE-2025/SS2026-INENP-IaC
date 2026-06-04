@@ -80,9 +80,7 @@ Apply the bootstrap configuration:
 terraform apply
 ```
 
-Terraform will ask for the required `project_id`.
-
-After entering the Google Cloud project ID and confirming the execution with:
+Confirm the execution with:
 
 ```text
 yes
@@ -91,7 +89,41 @@ yes
 Terraform will create a Google Cloud Storage bucket.
 This bucket will be used as the remote backend for storing the Terraform state.
 
+### GitHub Fine-Grained Token (Argo CD)
+
+Argo CD needs read access to the GitOps repository
+(`MCCE-2025/SS2026-INENP-GitOps`). Create a fine-grained personal access token:
+
+1. Open GitHub → **Settings** → **Developer settings** →
+   **Personal access tokens** → **Fine-grained tokens**
+2. Click **Generate new token**
+3. Configure the token:
+   - **Token name:** `github_token_argocd`
+   - **Expiration:** choose an expiry (e.g. 90 days or custom)
+   - **Resource owner:** `MCCE-2025` (organization) or your user account
+   - **Repository access:** **Only select repositories** →
+     `SS2026-INENP-GitOps`
+   - **Permissions:**
+     - **Contents:** Read-only
+     - **Metadata:** Read-only
+4. Click **Generate token** and copy the token (`github_pat_...`)
+
 ### Result
 
 After the bootstrap step has completed successfully, the project is ready to use
 remote Terraform state stored in Google Cloud Storage.
+
+### Provision Main Infrastructure
+
+After bootstrapping (creating the storage bucket for Terraform state), go to the
+repository root directory, set the GitHub token, and run Terraform:
+
+```bash
+cd ..
+export TF_VAR_github_token_argocd="github_pat_..."
+terraform init
+terraform apply
+```
+
+Review the planned changes, then type `yes` to confirm and provision the
+infrastructure (GKE cluster, Argo CD, and GitOps repository connection).

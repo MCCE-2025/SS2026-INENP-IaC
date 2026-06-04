@@ -1,25 +1,26 @@
 data "google_container_engine_versions" "versions" {}
 
 resource "google_service_account" "service_account" {
-  account_id   = "platform-${var.project_id}"
-  display_name = "Service Account for the demo cluster"
+  account_id   = "sa-${var.project_id}"
+  display_name = "Service Account for the cluster"
 }
 
 resource "google_container_node_pool" "node_pool" {
   name_prefix    = "platform-"
   cluster        = google_container_cluster.cluster.name
-  location       = var.zone
-  node_locations = [var.zone]
+  location       = var.region
+  node_locations = var.ha_node_zones
 
-  version            = data.google_container_engine_versions.versions.release_channel_default_version["STABLE"]
-  initial_node_count = 1
+  version = data.google_container_engine_versions.versions.release_channel_default_version["STABLE"]
+
   autoscaling {
-    min_node_count = 1
-    max_node_count = 2
+    min_node_count  = length(var.ha_node_zones)
+    max_node_count  = length(var.ha_node_zones) + 2
+    location_policy = "BALANCED"
   }
 
   node_config {
-    spot         = true
+    spot         = false
     machine_type = "e2-medium"
 
     boot_disk {

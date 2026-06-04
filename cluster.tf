@@ -1,7 +1,7 @@
 resource "google_container_cluster" "cluster" {
   name        = "platform-gke-cluster"
   description = "platform group G Cluster"
-  location    = var.zone
+  location    = var.region
 
   release_channel {
     channel = "REGULAR"

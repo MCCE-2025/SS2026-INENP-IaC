@@ -1,6 +1,6 @@
 terraform {
   backend "gcs" {
-    bucket = "terraform-state-<TODO-after-bootstrap>-"
-    prefix = "platfform-terraform"
+    bucket = "terraform-state-sonorous-stone-498307-u2"
+    prefix = "platform-terraform"
   }
 }

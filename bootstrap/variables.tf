@@ -1,4 +1,8 @@
-variable "project_id" { type = string }
+variable "project_id" {
+  description = "Google Cloud project ID"
+  type        = string
+  default     = "sonorous-stone-498307-u2"
+}
 
 variable "region" {
   type    = string
