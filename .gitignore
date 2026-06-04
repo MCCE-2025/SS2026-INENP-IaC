@@ -1,0 +1,21 @@
+# Terraform — local state and provider cache (do not commit)
+.terraform/
+*.tfstate
+*.tfstate.*
+
+# Secrets / local overrides (commit *.tfvars.example if you add one)
+*.tfvars
+*.auto.tfvars
+
+# Crash logs and CLI overrides
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
