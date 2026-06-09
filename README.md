@@ -46,10 +46,31 @@ for detailed steps and explanations.
 
 ## Local Linting
 
-Install the required linters on macOS using Homebrew:
+Install the required linters.
+
+**macOS (Homebrew):**
 
 ```bash
 brew install yamllint markdownlint-cli2 trivy
+```
+
+**Linux (Debian/Ubuntu):**
+
+```bash
+sudo apt-get update
+sudo apt-get install -y yamllint
+
+# markdownlint-cli2 (requires Node.js)
+npm install -g markdownlint-cli2
+
+# Trivy
+sudo apt-get install -y wget apt-transport-https gnupg lsb-release
+wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key \
+  | sudo gpg --dearmor -o /usr/share/keyrings/trivy.gpg
+echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] \
+  https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" \
+  | sudo tee /etc/apt/sources.list.d/trivy.list
+sudo apt-get update && sudo apt-get install -y trivy
 ```
 
 Run YAML linting for the whole repository:
@@ -80,10 +101,30 @@ Terraform remote state.
 
 ### Authenticate with Google Cloud
 
-Install the Google Cloud SDK on macOS using Homebrew:
+Install the Google Cloud SDK.
+
+**macOS (Homebrew):**
 
 ```bash
 brew install --cask google-cloud-sdk
+```
+
+**Linux (Debian/Ubuntu):**
+
+```bash
+curl https://packages.cloud.google.com/apt/doc/apt-key.gpg \
+  | sudo gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg
+echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] \
+  https://packages.cloud.google.com/apt cloud-sdk main" \
+  | sudo tee /etc/apt/sources.list.d/google-cloud-sdk.list
+sudo apt-get update && sudo apt-get install -y google-cloud-cli
+```
+
+Alternatively, use the interactive installer (works on most Linux distributions):
+
+```bash
+curl https://sdk.cloud.google.com | bash
+exec -l $SHELL
 ```
 
 Log in with your Google account and configure Application Default Credentials
@@ -112,11 +153,24 @@ file path (see `provider.tf`).
 
 ### Install Terraform
 
-Install Terraform on macOS using Homebrew:
+Install Terraform.
+
+**macOS (Homebrew):**
 
 ```bash
 brew tap hashicorp/tap
 brew install hashicorp/tap/terraform
+```
+
+**Linux (Debian/Ubuntu):**
+
+```bash
+wget -O- https://apt.releases.hashicorp.com/gpg \
+  | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] \
+  https://apt.releases.hashicorp.com $(lsb_release -cs) main" \
+  | sudo tee /etc/apt/sources.list.d/hashicorp.list
+sudo apt-get update && sudo apt-get install -y terraform
 ```
 
 Verify the installation:
