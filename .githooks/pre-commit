@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+require() {
+  if ! command -v "$1" >/dev/null 2>&1; then
+    echo "pre-commit: $1 is required but not installed." >&2
+    echo "See README.md (Local Linting) for install instructions." >&2
+    exit 1
+  fi
+}
+
+run_check() {
+  local name="$1"
+  shift
+  echo "pre-commit: running $name..."
+  if ! "$@"; then
+    echo "pre-commit: $name failed." >&2
+    exit 1
+  fi
+}
+
+require yamllint
+require markdownlint-cli2
+require trivy
+
+# .github/workflows/yaml-lint.yaml
+run_check "yaml-lint" yamllint .
+
+# .github/workflows/markdown-lint.yaml
+run_check "markdown-lint" markdownlint-cli2 "**/*.md"
+
+# .github/workflows/trivy-config-scan.yaml
+run_check "trivy config scan" \
+  trivy config --severity CRITICAL --exit-code 1 --skip-dirs .terraform .
+
+echo "pre-commit: all checks passed."
