@@ -2,6 +2,11 @@ output "project_id" {
   value       = var.project_id
   description = "Project ID where the cluster is deployed"
 }
+output "region" {
+  value       = var.region
+  description = "Region where the cluster is deployed"
+}
+
 output "zone" {
   value       = var.zone
   description = "Zone where the cluster is deployed"
@@ -13,6 +18,6 @@ output "kubernetes_cluster_name" {
 }
 
 output "kubernetes_cluster_gcloud_command" {
-  value       = "KUBECONFIG=./gke.kubeconfig gcloud container clusters get-credentials ${google_container_cluster.cluster.name} --zone ${var.zone} --project ${var.project_id}"
+  value       = "KUBECONFIG=./gke.kubeconfig gcloud container clusters get-credentials ${google_container_cluster.cluster.name} --region ${var.region} --project ${var.project_id}"
   description = "Command to get credentials for the cluster"
 }
