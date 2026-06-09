@@ -54,7 +54,7 @@ variable "github_app_private_key" {
 }
 
 variable "dns_managed_zone_name" {
-  description = "Resource name of the existing Cloud DNS managed zone for ExternalDNS"
+  description = "GCP resource name of the existing Cloud DNS managed zone (gcloud managed-zones list NAME column), not the DNS domain (dnsName)"
   type        = string
 }
 

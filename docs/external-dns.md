@@ -10,12 +10,24 @@ The ExternalDNS deployment itself lives in the GitOps repository
 
 ## Terraform variable
 
-Set the existing Cloud DNS managed zone name when applying (required for
-ExternalDNS Workload Identity):
+Set the existing Cloud DNS managed zone **resource name** when applying
+(required for ExternalDNS Workload Identity):
 
 ```bash
 export TF_VAR_dns_managed_zone_name="your-managed-zone-name"
 ```
+
+Use the value in the **NAME** column from `gcloud dns managed-zones list`, not
+the **DNS_NAME** (domain). For example, a zone with `NAME` `my-zone` and
+`DNS_NAME` `example.example.com.` must be passed as `my-zone`. Using the domain
+(`example.example.com`) causes a 404 during `terraform plan`.
+
+```bash
+gcloud dns managed-zones list --format="table(name,dnsName)"
+```
+
+The **DNS_NAME** is exposed after apply via `terraform output external_dns_dns_name`
+and is used in GitOps as ExternalDNS `--domain-filter` (without the trailing dot).
 
 ## Prerequisites (this repo)
 
@@ -46,7 +58,7 @@ spec:
   source:
     repoURL: https://kubernetes-sigs.github.io/external-dns/
     chart: external-dns
-    targetRevision: 1.15.0
+    targetRevision: 1.21.*
     helm:
       values: |
         provider:
@@ -94,8 +106,9 @@ zone instead.
    kubectl logs -n external-dns -l app.kubernetes.io/name=external-dns
    ```
 
-3. Confirm DNS record changes in Cloud DNS:
+3. Confirm DNS record changes in Cloud DNS (use the managed zone **resource
+   name**, same value as `TF_VAR_dns_managed_zone_name`):
 
    ```bash
-   gcloud dns record-sets list --zone=<dns_managed_zone_name>
+   gcloud dns record-sets list --zone=<your-managed-zone-name>
    ```
