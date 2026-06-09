@@ -13,8 +13,11 @@ and related resources for the project infrastructure.
 
 ## Quickstart
 
-Prerequisites: [Google Cloud SDK](#authenticate-with-google-cloud) and
-[Terraform](#install-terraform) installed, plus a [GitHub token for Argo CD](#github-fine-grained-token-argo-cd).
+Prerequisites:
+
+- [Google Cloud SDK](#authenticate-with-google-cloud)
+- [Terraform](#install-terraform)
+- [GitHub token for Argo CD](#github-fine-grained-token-argo-cd).
 
 ```bash
 # 1. Log in to Google Cloud and select your project
@@ -32,6 +35,7 @@ terraform apply
 
 # 3. Provision the platform (from the repository root)
 cd ..
+# see Prerequisites for how to create the PAT for ArgoCD
 export TF_VAR_github_token_argocd="github_pat_..."
 source ./init.sh
 terraform apply
