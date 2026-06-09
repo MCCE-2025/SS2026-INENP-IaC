@@ -11,6 +11,35 @@ and related resources for the project infrastructure.
 | Nemanja Filipović | <2510781028@hochschule-burgenland.at> |
 | Andreas Werschlan | <2510781034@hochschule-burgenland.at> |
 
+## Quickstart
+
+Prerequisites: [Google Cloud SDK](#authenticate-with-google-cloud) and
+[Terraform](#install-terraform) installed, plus a [GitHub token for Argo CD](#github-fine-grained-token-argo-cd).
+
+```bash
+# 1. Log in to Google Cloud and select your project
+gcloud auth login
+gcloud auth application-default login
+# list available projects
+gcloud projects list
+# configure the project you want to deploy to
+gcloud config set project <your-project-id>
+
+# 2. Bootstrap the Terraform state bucket
+cd bootstrap
+source ./init.sh
+terraform apply
+
+# 3. Provision the platform (from the repository root)
+cd ..
+export TF_VAR_github_token_argocd="github_pat_..."
+source ./init.sh
+terraform apply
+```
+
+Confirm each `terraform apply` with `yes`. See [Infrastructure Provisioning](#infrastructure-provisioning)
+for detailed steps and explanations.
+
 ## Local Linting
 
 Install the required linters on macOS using Homebrew:
@@ -45,6 +74,38 @@ Before provisioning the main infrastructure, the Terraform backend must be
 bootstrapped. The bootstrap step creates a Google Cloud Storage bucket for
 Terraform remote state.
 
+### Authenticate with Google Cloud
+
+Install the Google Cloud SDK on macOS using Homebrew:
+
+```bash
+brew install --cask google-cloud-sdk
+```
+
+Log in with your Google account and configure Application Default Credentials
+(used by Terraform):
+
+```bash
+gcloud auth login
+gcloud auth application-default login
+```
+
+Set the active project (required for `init.sh`, `bootstrap/init.sh`, and Terraform):
+
+```bash
+gcloud config set project <your-project-id>
+```
+
+Verify the configuration:
+
+```bash
+gcloud config get-value project
+gcloud auth list
+```
+
+Alternatively, set `GOOGLE_APPLICATION_CREDENTIALS` to a service account key
+file path (see `provider.tf`).
+
 ### Install Terraform
 
 Install Terraform on macOS using Homebrew:
@@ -62,21 +123,21 @@ terraform version
 
 ### Bootstrap Terraform Backend
 
-Navigate to the bootstrap directory:
+Navigate to the bootstrap directory, source the init script, and apply:
 
 ```bash
 cd bootstrap
+source ./init.sh
 ```
 
-Set the target project (no value is hardcoded):
+The init script reads the active gcloud project, exports `TF_VAR_project_id`
+into your shell, and runs `terraform init`. No project ID is hardcoded. Use
+`source` (not `./init.sh`) so the variable is available for `terraform apply`.
+
+To initialize manually instead:
 
 ```bash
 export TF_VAR_project_id="$(gcloud config get-value project)"
-```
-
-Initialize Terraform:
-
-```bash
 terraform init
 ```
 
@@ -122,13 +183,31 @@ remote Terraform state stored in Google Cloud Storage.
 ### Provision Main Infrastructure
 
 After bootstrapping (creating the storage bucket for Terraform state), go to the
-repository root directory, set the GitHub token, and run Terraform:
+repository root directory, set the GitHub token, source the init script, and
+apply:
 
 ```bash
 cd ..
+export TF_VAR_github_token_argocd="github_pat_..."
+source ./init.sh
+```
+
+The init script reads the active gcloud project, exports `TF_VAR_project_id`
+into your shell, and runs `terraform init` with the matching state bucket
+(`terraform-state-<project_id>`). Use `source` (not `./init.sh`) so the variable
+is available for `terraform apply`.
+
+To initialize manually instead:
+
+```bash
 export TF_VAR_project_id="$(gcloud config get-value project)"
 export TF_VAR_github_token_argocd="github_pat_..."
 terraform init -backend-config="bucket=terraform-state-${TF_VAR_project_id}"
+```
+
+Apply the platform configuration:
+
+```bash
 terraform apply
 ```
 
