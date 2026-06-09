@@ -2,6 +2,7 @@
 .terraform/
 *.tfstate
 *.tfstate.*
+.terraform.lock.hcl
 
 # Secrets / local overrides (commit *.tfvars.example if you add one)
 *.tfvars

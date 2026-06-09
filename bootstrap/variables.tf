@@ -1,7 +1,6 @@
 variable "project_id" {
-  description = "Google Cloud project ID"
+  description = "Google Cloud project ID (supply via TF_VAR_project_id, e.g. export TF_VAR_project_id=$(gcloud config get-value project))"
   type        = string
-  default     = "sonorous-stone-498307-u2"
 }
 
 variable "region" {
