@@ -68,6 +68,12 @@ Navigate to the bootstrap directory:
 cd bootstrap
 ```
 
+Set the target project (no value is hardcoded):
+
+```bash
+export TF_VAR_project_id="$(gcloud config get-value project)"
+```
+
 Initialize Terraform:
 
 ```bash
@@ -120,10 +126,16 @@ repository root directory, set the GitHub token, and run Terraform:
 
 ```bash
 cd ..
+export TF_VAR_project_id="$(gcloud config get-value project)"
 export TF_VAR_github_token_argocd="github_pat_..."
-terraform init
+terraform init -backend-config="bucket=terraform-state-${TF_VAR_project_id}"
 terraform apply
 ```
+
+The state bucket name is derived from the active project instead of being
+hardcoded. Terraform `backend` blocks cannot reference variables, so the bucket
+is supplied at init time via partial backend configuration. The name matches the
+bucket created during bootstrap (`terraform-state-<project_id>`).
 
 Review the planned changes, then type `yes` to confirm and provision the
 infrastructure (GKE cluster, Argo CD, and GitOps repository connection).
