@@ -44,6 +44,34 @@ terraform apply
 Confirm each `terraform apply` with `yes`. See [Infrastructure Provisioning](#infrastructure-provisioning)
 for detailed steps and explanations.
 
+## Access Argo CD
+
+After provisioning, open the Argo CD UI from your machine via `kubectl` port-forward.
+
+Prerequisites: [Google Cloud SDK](#authenticate-with-google-cloud) and `kubectl`
+(`gcloud components install kubectl`).
+
+```bash
+# 1. Configure kubectl for the GKE cluster (project from active gcloud config / TF_VAR_project_id)
+gcloud container clusters get-credentials platform-gke-cluster \
+  --region europe-west3 \
+  --project "$(gcloud config get-value project)"
+
+# 2. Verify the cluster and Argo CD (optional)
+kubectl get nodes
+kubectl get services -n argocd
+
+# 3. Fetch the initial admin password (username: admin)
+kubectl get secret argocd-initial-admin-secret -n argocd \
+  -o jsonpath="{.data.password}" | base64 -d; echo
+
+# 4. Forward the Argo CD server to localhost (keep this running)
+kubectl port-forward svc/argocd-server -n argocd 8080:443
+```
+
+Open [https://localhost:8080](https://localhost:8080) and log in with username `admin`
+and the password from step 3. Stop the port-forward with `Ctrl+C` when done.
+
 ## Local Linting
 
 Install the required linters.
