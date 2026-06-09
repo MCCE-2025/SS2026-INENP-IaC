@@ -52,3 +52,20 @@ variable "github_app_private_key" {
   type        = string
   sensitive   = true
 }
+
+variable "dns_managed_zone_name" {
+  description = "Resource name of the existing Cloud DNS managed zone for ExternalDNS"
+  type        = string
+}
+
+variable "external_dns_namespace" {
+  description = "Kubernetes namespace where the ExternalDNS service account lives"
+  type        = string
+  default     = "external-dns"
+}
+
+variable "external_dns_ksa" {
+  description = "Kubernetes service account name used by ExternalDNS (must match GitOps deployment)"
+  type        = string
+  default     = "external-dns"
+}

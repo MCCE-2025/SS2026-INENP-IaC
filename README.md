@@ -319,3 +319,6 @@ bucket created during bootstrap (`terraform-state-<project_id>`).
 
 Review the planned changes, then type `yes` to confirm and provision the
 infrastructure (GKE cluster, Argo CD, and GitOps repository connection).
+
+See [ExternalDNS with Workload Identity](docs/external-dns.md) for Cloud DNS
+access configuration and GitOps deployment steps.

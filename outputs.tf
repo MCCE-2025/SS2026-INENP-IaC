@@ -26,3 +26,13 @@ output "argocd_root_app" {
   value       = "root (syncs ${var.gitops_apps_path}/ from ${var.gitops_repo_url})"
   description = "Argo CD app-of-apps root Application managed by Terraform"
 }
+
+output "external_dns_principal" {
+  value       = local.external_dns_principal
+  description = "Workload Identity principal bound to roles/dns.admin for ExternalDNS"
+}
+
+output "external_dns_dns_name" {
+  value       = data.google_dns_managed_zone.external_dns.dns_name
+  description = "DNS name of the managed zone; use as ExternalDNS --domain-filter (without trailing dot)"
+}
