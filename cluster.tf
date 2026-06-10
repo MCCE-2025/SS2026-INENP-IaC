@@ -6,9 +6,6 @@ resource "google_container_cluster" "cluster" {
   release_channel {
     channel = "REGULAR"
   }
-  gke_auto_upgrade_config {
-    patch_mode = "ACCELERATED"
-  }
 
   remove_default_node_pool = true
   initial_node_count       = 1
