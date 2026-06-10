@@ -12,7 +12,7 @@ spec:
     path: {{ .Values.gitops_apps_path | quote }}
     directory:
       recurse: true
-      include: application.yaml
+      include: "*.yaml"
   destination:
     server: https://kubernetes.default.svc
     namespace: {{ .Values.argocd_namespace }}

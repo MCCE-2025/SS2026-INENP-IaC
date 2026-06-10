@@ -1,4 +1,4 @@
 gitops_repo_url: ""
 gitops_target_revision: HEAD
-gitops_apps_path: apps
+gitops_apps_path: argocd/applications
 argocd_namespace: argocd

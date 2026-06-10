@@ -28,7 +28,7 @@ variable "gitops_repo_url" {
 variable "gitops_apps_path" {
   description = "Path in the GitOps repo where platform and tenant Application manifests live"
   type        = string
-  default     = "apps"
+  default     = "argocd/applications"
 }
 
 variable "gitops_target_revision" {
