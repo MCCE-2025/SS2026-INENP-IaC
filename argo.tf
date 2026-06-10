@@ -5,6 +5,8 @@ resource "helm_release" "argocd" {
   namespace        = "argocd"
   create_namespace = true
   version          = "9.5.17"
+  wait             = true
+  timeout          = 600
 
   depends_on = [
     google_container_cluster.cluster,

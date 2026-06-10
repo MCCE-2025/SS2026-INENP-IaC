@@ -21,3 +21,8 @@ output "kubernetes_cluster_gcloud_command" {
   value       = "KUBECONFIG=./gke.kubeconfig gcloud container clusters get-credentials ${google_container_cluster.cluster.name} --region ${var.region} --project ${var.project_id}"
   description = "Command to get credentials for the cluster"
 }
+
+output "argocd_root_app" {
+  value       = "root (syncs ${var.gitops_apps_path}/ from ${var.gitops_repo_url})"
+  description = "Argo CD app-of-apps root Application managed by Terraform"
+}
