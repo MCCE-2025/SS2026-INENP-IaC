@@ -25,6 +25,18 @@ variable "gitops_repo_url" {
   default     = "https://github.com/MCCE-2025/SS2026-INENP-GitOps"
 }
 
+variable "gitops_apps_path" {
+  description = "Path in the GitOps repo where platform and tenant Application manifests live"
+  type        = string
+  default     = "apps"
+}
+
+variable "gitops_target_revision" {
+  description = "Git branch, tag, or commit for the GitOps repo"
+  type        = string
+  default     = "HEAD"
+}
+
 variable "github_app_id" {
   description = "GitHub App ID used by Argo CD to access the GitOps repository"
   type        = string
