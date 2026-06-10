@@ -25,8 +25,18 @@ variable "gitops_repo_url" {
   default     = "https://github.com/MCCE-2025/SS2026-INENP-GitOps"
 }
 
-variable "github_token_argocd" {
-  description = "GitHub PAT for Argo CD"
+variable "github_app_id" {
+  description = "GitHub App ID used by Argo CD to access the GitOps repository"
+  type        = string
+}
+
+variable "github_app_installation_id" {
+  description = "Installation ID of the GitHub App on the GitOps repository"
+  type        = string
+}
+
+variable "github_app_private_key" {
+  description = "Private key (PEM content) of the GitHub App (e.g. export TF_VAR_github_app_private_key=\"$(cat argocd-app.private-key.pem)\")"
   type        = string
   sensitive   = true
 }

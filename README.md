@@ -17,7 +17,7 @@ Prerequisites:
 
 - [Google Cloud SDK](#authenticate-with-google-cloud)
 - [Terraform](#install-terraform)
-- [GitHub token for Argo CD](#github-fine-grained-token-argo-cd).
+- [GitHub App for Argo CD](#github-app-argo-cd).
 
 ```bash
 # 1. Log in to Google Cloud and select your project
@@ -35,8 +35,10 @@ terraform apply
 
 # 3. Provision the platform (from the repository root)
 cd ..
-# see Prerequisites for how to create the PAT for ArgoCD
-export TF_VAR_github_token_argocd="github_pat_..."
+# see Prerequisites for how to create the GitHub App for Argo CD
+export TF_VAR_github_app_id="<app-id>"
+export TF_VAR_github_app_installation_id="<installation-id>"
+export TF_VAR_github_app_private_key="$(cat /path/to/argocd-app.private-key.pem)"
 source ./init.sh
 terraform apply
 ```
@@ -242,24 +244,33 @@ yes
 Terraform will create a Google Cloud Storage bucket.
 This bucket will be used as the remote backend for storing the Terraform state.
 
-### GitHub Fine-Grained Token (Argo CD)
+### GitHub App (Argo CD)
 
 Argo CD needs read access to the GitOps repository
-(`MCCE-2025/SS2026-INENP-GitOps`). Create a fine-grained personal access token:
+(`MCCE-2025/SS2026-INENP-GitOps`). It authenticates as a GitHub App: Argo CD
+exchanges the app private key for short-lived installation tokens, so no
+long-lived, user-bound token is stored in the cluster.
 
-1. Open GitHub → **Settings** → **Developer settings** →
-   **Personal access tokens** → **Fine-grained tokens**
-2. Click **Generate new token**
-3. Configure the token:
-   - **Token name:** `github_token_argocd`
-   - **Expiration:** choose an expiry (e.g. 90 days or custom)
-   - **Resource owner:** `MCCE-2025` (organization) or your user account
-   - **Repository access:** **Only select repositories** →
-     `SS2026-INENP-GitOps`
-   - **Permissions:**
+Create the app once per organization:
+
+1. Open GitHub → **Organizations** → `MCCE-2025` → **Settings** →
+   **Developer settings** → **GitHub Apps** → **New GitHub App**
+2. Configure the app:
+   - **GitHub App name:** e.g. `argocd-gitops-reader`
+   - **Homepage URL:** any URL (e.g. this repository)
+   - **Webhook:** uncheck **Active** (no webhook needed)
+   - **Repository permissions:**
      - **Contents:** Read-only
      - **Metadata:** Read-only
-4. Click **Generate token** and copy the token (`github_pat_...`)
+   - **Where can this GitHub App be installed?** Only on this account
+3. Click **Create GitHub App** and note the **App ID** shown on the app page
+4. In the app settings, under **Private keys**, click
+   **Generate a private key** and store the downloaded `.pem` file securely
+   (never commit it; `*.pem` is gitignored)
+5. Click **Install App**, install it on the `MCCE-2025` organization with
+   **Only select repositories** → `SS2026-INENP-GitOps`
+6. Note the **Installation ID** from the installation page URL:
+   `https://github.com/organizations/MCCE-2025/settings/installations/<installation-id>`
 
 ### Result
 
@@ -269,12 +280,14 @@ remote Terraform state stored in Google Cloud Storage.
 ### Provision Main Infrastructure
 
 After bootstrapping (creating the storage bucket for Terraform state), go to the
-repository root directory, set the GitHub token, source the init script, and
-apply:
+repository root directory, set the GitHub App variables, source the init script,
+and apply:
 
 ```bash
 cd ..
-export TF_VAR_github_token_argocd="github_pat_..."
+export TF_VAR_github_app_id="<app-id>"
+export TF_VAR_github_app_installation_id="<installation-id>"
+export TF_VAR_github_app_private_key="$(cat /path/to/argocd-app.private-key.pem)"
 source ./init.sh
 ```
 
@@ -287,7 +300,9 @@ To initialize manually instead:
 
 ```bash
 export TF_VAR_project_id="$(gcloud config get-value project)"
-export TF_VAR_github_token_argocd="github_pat_..."
+export TF_VAR_github_app_id="<app-id>"
+export TF_VAR_github_app_installation_id="<installation-id>"
+export TF_VAR_github_app_private_key="$(cat /path/to/argocd-app.private-key.pem)"
 terraform init -backend-config="bucket=terraform-state-${TF_VAR_project_id}"
 ```
 
