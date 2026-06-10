@@ -22,7 +22,6 @@ platform_init() {
   local missing_vars=()
   [[ -z "${TF_VAR_github_app_id:-}" ]] && missing_vars+=("TF_VAR_github_app_id")
   [[ -z "${TF_VAR_github_app_installation_id:-}" ]] && missing_vars+=("TF_VAR_github_app_installation_id")
-  [[ -z "${TF_VAR_github_app_private_key:-}" ]] && missing_vars+=("TF_VAR_github_app_private_key")
 
   if [[ ${#missing_vars[@]} -gt 0 ]]; then
     echo
@@ -30,8 +29,11 @@ platform_init() {
     echo "Export them before terraform apply (see README, GitHub App for Argo CD):"
     echo "  export TF_VAR_github_app_id=\"<app-id>\""
     echo "  export TF_VAR_github_app_installation_id=\"<installation-id>\""
-    echo "  export TF_VAR_github_app_private_key=\"\$(cat /path/to/argocd-app.private-key.pem)\""
   fi
+
+  echo
+  echo "Note: upload the GitHub App private key to Secret Manager after apply (see README):"
+  echo "  gcloud secrets versions add argocd-github-app-private-key --data-file=/path/to/argocd-app.private-key.pem"
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
