@@ -10,10 +10,10 @@ resource "kubernetes_secret" "gitops_repo" {
   type = "Opaque"
 
   data = {
-    type     = base64encode("git")
-    url      = base64encode(var.gitops_repo_url)
-    username = base64encode("git")
-    password = base64encode(var.github_token_argocd)
+    type     = "git"
+    url      = var.gitops_repo_url
+    username = "git"
+    password = var.github_token_argocd
   }
 
   depends_on = [helm_release.argocd]
