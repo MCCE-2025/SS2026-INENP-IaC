@@ -21,3 +21,10 @@ provider "kubernetes" {
   token                  = local.kubernetes.token
   cluster_ca_certificate = local.kubernetes.cluster_ca_certificate
 }
+
+provider "kubectl" {
+  host                   = local.kubernetes.host
+  token                  = local.kubernetes.token
+  cluster_ca_certificate = local.kubernetes.cluster_ca_certificate
+  load_config_file       = false
+}
