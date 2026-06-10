@@ -11,6 +11,7 @@ resource "kubernetes_manifest" "argocd_project_platform" {
       sourceRepos = [
         var.gitops_repo_url,
         "https://charts.crossplane.io/stable",
+        "https://kubernetes-sigs.github.io/external-dns/",
       ]
       destinations = [
         {
