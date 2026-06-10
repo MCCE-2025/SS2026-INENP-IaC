@@ -78,8 +78,8 @@ resource "kubectl_manifest" "gitops_repo_external_secret" {
           data = {
             type                    = "git"
             url                     = var.gitops_repo_url
-            githubAppID             = var.github_app_id
-            githubAppInstallationID = var.github_app_installation_id
+            githubAppID             = "{{ .githubAppID }}"
+            githubAppInstallationID = "{{ .githubAppInstallationID }}"
             githubAppPrivateKey     = "{{ .githubAppPrivateKey }}"
           }
         }
@@ -88,9 +88,21 @@ resource "kubectl_manifest" "gitops_repo_external_secret" {
         {
           secretKey = "githubAppPrivateKey"
           remoteRef = {
-            key = google_secret_manager_secret.argocd_github_app_private_key.secret_id
+            key = google_secret_manager_secret.argocd_github_app["argocd-github-app-private-key"].secret_id
           }
-        }
+        },
+        {
+          secretKey = "githubAppID"
+          remoteRef = {
+            key = google_secret_manager_secret.argocd_github_app["argocd-github-app-id"].secret_id
+          }
+        },
+        {
+          secretKey = "githubAppInstallationID"
+          remoteRef = {
+            key = google_secret_manager_secret.argocd_github_app["argocd-github-app-installation-id"].secret_id
+          }
+        },
       ]
     }
   })

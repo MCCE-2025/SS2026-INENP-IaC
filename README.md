@@ -36,14 +36,18 @@ terraform apply
 # 3. Provision the platform (from the repository root)
 cd ..
 # see Prerequisites for how to create the GitHub App for Argo CD
-export TF_VAR_github_app_id="<app-id>"
-export TF_VAR_github_app_installation_id="<installation-id>"
 # managed zone resource name (NAME column), not the DNS domain — see docs/external-dns.md
 export TF_VAR_dns_managed_zone_name="your-managed-zone-name"
 source ./init.sh
+# Creates empty Secret Manager containers; apply does not need credential values yet.
 terraform apply
 
-# 4. Upload the GitHub App private key to Secret Manager (one-time, never in git or TF)
+# 4. Upload GitHub App credentials (after apply — the secrets above must exist first)
+APP_ID="<app-id>"
+INSTALLATION_ID="<installation-id>"
+
+gcloud secrets versions add argocd-github-app-id --data-file=<(printf "$APP_ID")
+gcloud secrets versions add argocd-github-app-installation-id --data-file=<(printf "$INSTALLATION_ID")
 gcloud secrets versions add argocd-github-app-private-key \
   --data-file=/path/to/argocd-app.private-key.pem
 ```
@@ -277,25 +281,34 @@ Create the app once per organization:
 6. Note the **Installation ID** from the installation page URL:
    `https://github.com/organizations/MCCE-2025/settings/installations/<installation-id>`
 
-### GitHub App key in Secret Manager
+### GitHub App credentials in Secret Manager
 
-The GitHub App private key (PEM) is **not** passed through Terraform or environment
-variables. Terraform creates an empty secret container in GCP Secret Manager; you
-upload the PEM manually after the first `terraform apply`. External Secrets Operator
-(ESO) syncs it into the `gitops-repo` Kubernetes secret in the `argocd` namespace.
+GitHub App credentials are **not** passed through Terraform or environment
+variables. Terraform creates empty secret containers in GCP Secret Manager; you
+upload the App ID, Installation ID, and private key (PEM) manually after the first
+`terraform apply`. External Secrets Operator (ESO) syncs them into the `gitops-repo`
+Kubernetes secret in the `argocd` namespace.
 
 #### Initial upload
 
 After provisioning the platform:
 
 ```bash
+APP_ID="<app-id>"
+INSTALLATION_ID="<installation-id>"
+
+gcloud secrets versions add argocd-github-app-id --data-file=<(printf "$APP_ID")
+gcloud secrets versions add argocd-github-app-installation-id --data-file=<(printf "$INSTALLATION_ID")
 gcloud secrets versions add argocd-github-app-private-key \
   --data-file=/path/to/argocd-app.private-key.pem
 ```
 
-On a fresh project, the ExternalSecret stays pending until a secret version exists.
-ESO picks up the new version within its refresh interval (default: 1 hour) or after
-you restart the ESO controller.
+Use `printf` inside process substitution (not `echo`) so no trailing newline is
+stored — Argo CD expects the exact App ID and Installation ID.
+
+On a fresh project, the ExternalSecret stays pending until all three secret
+versions exist. ESO picks up new versions within its refresh interval (default:
+1 hour) or after you restart the ESO controller.
 
 Verify sync:
 
@@ -322,13 +335,10 @@ remote Terraform state stored in Google Cloud Storage.
 ### Provision Main Infrastructure
 
 After bootstrapping (creating the storage bucket for Terraform state), go to the
-repository root directory, set the GitHub App variables, source the init script,
-and apply:
+repository root directory, source the init script, and apply:
 
 ```bash
 cd ..
-export TF_VAR_github_app_id="<app-id>"
-export TF_VAR_github_app_installation_id="<installation-id>"
 export TF_VAR_dns_managed_zone_name="your-managed-zone-name"
 source ./init.sh
 ```
@@ -342,8 +352,6 @@ To initialize manually instead:
 
 ```bash
 export TF_VAR_project_id="$(gcloud config get-value project)"
-export TF_VAR_github_app_id="<app-id>"
-export TF_VAR_github_app_installation_id="<installation-id>"
 export TF_VAR_dns_managed_zone_name="your-managed-zone-name"
 terraform init -backend-config="bucket=terraform-state-${TF_VAR_project_id}"
 ```
@@ -362,8 +370,8 @@ bucket created during bootstrap (`terraform-state-<project_id>`).
 Review the planned changes, then type `yes` to confirm and provision the
 infrastructure (GKE cluster, Argo CD, ESO, and GitOps repository connection).
 
-Upload the GitHub App private key to Secret Manager as described in
-[GitHub App key in Secret Manager](#github-app-key-in-secret-manager) before
+Upload GitHub App credentials to Secret Manager as described in
+[GitHub App credentials in Secret Manager](#github-app-credentials-in-secret-manager) before
 expecting Argo CD to sync the GitOps repository.
 
 See [ExternalDNS with Workload Identity](docs/external-dns.md) for Cloud DNS

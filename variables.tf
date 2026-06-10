@@ -37,16 +37,6 @@ variable "gitops_target_revision" {
   default     = "HEAD"
 }
 
-variable "github_app_id" {
-  description = "GitHub App ID used by Argo CD to access the GitOps repository"
-  type        = string
-}
-
-variable "github_app_installation_id" {
-  description = "Installation ID of the GitHub App on the GitOps repository"
-  type        = string
-}
-
 variable "dns_managed_zone_name" {
   description = "GCP resource name of the existing Cloud DNS managed zone (gcloud managed-zones list NAME column), not the DNS domain (dnsName)"
   type        = string

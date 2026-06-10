@@ -4,8 +4,17 @@ resource "google_project_service" "secretmanager" {
   disable_on_destroy = false
 }
 
-resource "google_secret_manager_secret" "argocd_github_app_private_key" {
-  secret_id = "argocd-github-app-private-key"
+locals {
+  argocd_github_app_secret_ids = [
+    "argocd-github-app-private-key",
+    "argocd-github-app-id",
+    "argocd-github-app-installation-id",
+  ]
+}
+
+resource "google_secret_manager_secret" "argocd_github_app" {
+  for_each  = toset(local.argocd_github_app_secret_ids)
+  secret_id = each.value
   project   = var.project_id
 
   replication {
@@ -21,8 +30,9 @@ resource "google_service_account" "external_secrets" {
 }
 
 resource "google_secret_manager_secret_iam_member" "external_secrets_accessor" {
+  for_each  = google_secret_manager_secret.argocd_github_app
   project   = var.project_id
-  secret_id = google_secret_manager_secret.argocd_github_app_private_key.secret_id
+  secret_id = each.value.secret_id
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.external_secrets.email}"
 
