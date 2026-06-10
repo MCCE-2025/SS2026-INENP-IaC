@@ -101,22 +101,22 @@ echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] \
 sudo apt-get update && sudo apt-get install -y trivy
 ```
 
-Run YAML linting for the whole repository:
+### Pre-commit hook
+
+After installing the linters above, enable the repository git hooks so the same
+checks run automatically before each commit:
 
 ```bash
-yamllint .
+./.githooks/install
 ```
 
-Run Markdown linting for the whole repository:
+This sets `core.hooksPath` to `.githooks/` and runs `yamllint`, `markdownlint-cli2`,
+and `trivy config` on every commit.
+
+To run the same checks without committing:
 
 ```bash
-markdownlint-cli2 "**/*.md"
-```
-
-Run Trivy configuration check:
-
-```bash
-trivy config .
+./.githooks/pre-commit
 ```
 
 ## Infrastructure Provisioning
