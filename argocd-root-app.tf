@@ -15,5 +15,6 @@ resource "helm_release" "argocd_root_app" {
   depends_on = [
     helm_release.argocd,
     kubernetes_secret.gitops_repo,
+    kubernetes_manifest.argocd_project_platform,
   ]
 }
