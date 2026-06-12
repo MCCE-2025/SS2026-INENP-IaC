@@ -19,28 +19,27 @@ platform_init() {
   echo "State bucket:  ${state_bucket}"
   terraform init -backend-config="bucket=${state_bucket}"
 
-  local missing_vars=()
-  [[ -z "${TF_VAR_github_app_id:-}" ]] && missing_vars+=("TF_VAR_github_app_id")
-  [[ -z "${TF_VAR_github_app_installation_id:-}" ]] && missing_vars+=("TF_VAR_github_app_installation_id")
-  [[ -z "${TF_VAR_github_app_private_key:-}" ]] && missing_vars+=("TF_VAR_github_app_private_key")
+  printf '\n
+Note: upload GitHub App credentials to Secret Manager after apply (see README):
 
-  if [[ ${#missing_vars[@]} -gt 0 ]]; then
-    echo
-    echo "Note: the following GitHub App variables are not set (${missing_vars[*]})."
-    echo "Export them before terraform apply (see README, GitHub App for Argo CD):"
-    echo "  export TF_VAR_github_app_id=\"<app-id>\""
-    echo "  export TF_VAR_github_app_installation_id=\"<installation-id>\""
-    echo "  export TF_VAR_github_app_private_key=\"\$(cat /path/to/argocd-app.private-key.pem)\""
-  fi
+  export APP_ID="<app-id>"
+  export INSTALLATION_ID="<installation-id>"
+  export PRIVATE_KEY_FILE="/path/to/argocd-app.private-key.pem"
+
+  gcloud secrets versions add argocd-github-app-id --data-file=<(printf "$APP_ID")
+  gcloud secrets versions add argocd-github-app-installation-id --data-file=<(printf "$INSTALLATION_ID")
+  gcloud secrets versions add argocd-github-app-private-key --data-file="$PRIVATE_KEY_FILE"
+'
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   set -euo pipefail
   platform_init
-  echo
-  echo "Note: TF_VAR_project_id is not set in your shell when running this script directly."
-  echo "Source it instead so terraform apply can use the same project:"
-  echo "  source ./init.sh"
+  printf '\n
+Note: TF_VAR_project_id is not set in your shell when running this script directly.\n
+Source it instead so terraform apply can use the same project:\n
+  source ./init.sh\n
+'
 else
   platform_init || return
 fi

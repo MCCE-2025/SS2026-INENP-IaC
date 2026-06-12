@@ -37,22 +37,6 @@ variable "gitops_target_revision" {
   default     = "HEAD"
 }
 
-variable "github_app_id" {
-  description = "GitHub App ID used by Argo CD to access the GitOps repository"
-  type        = string
-}
-
-variable "github_app_installation_id" {
-  description = "Installation ID of the GitHub App on the GitOps repository"
-  type        = string
-}
-
-variable "github_app_private_key" {
-  description = "Private key (PEM content) of the GitHub App (e.g. export TF_VAR_github_app_private_key=\"$(cat argocd-app.private-key.pem)\")"
-  type        = string
-  sensitive   = true
-}
-
 variable "dns_managed_zone_name" {
   description = "GCP resource name of the existing Cloud DNS managed zone (gcloud managed-zones list NAME column), not the DNS domain (dnsName)"
   type        = string
