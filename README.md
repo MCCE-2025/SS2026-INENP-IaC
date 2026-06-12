@@ -39,6 +39,8 @@ cd ..
 export TF_VAR_github_app_id="<app-id>"
 export TF_VAR_github_app_installation_id="<installation-id>"
 export TF_VAR_github_app_private_key="$(cat /path/to/argocd-app.private-key.pem)"
+# managed zone resource name (NAME column), not the DNS domain — see docs/external-dns.md
+export TF_VAR_dns_managed_zone_name="your-managed-zone-name"
 source ./init.sh
 terraform apply
 ```
@@ -288,6 +290,7 @@ cd ..
 export TF_VAR_github_app_id="<app-id>"
 export TF_VAR_github_app_installation_id="<installation-id>"
 export TF_VAR_github_app_private_key="$(cat /path/to/argocd-app.private-key.pem)"
+export TF_VAR_dns_managed_zone_name="your-managed-zone-name"
 source ./init.sh
 ```
 
@@ -303,6 +306,7 @@ export TF_VAR_project_id="$(gcloud config get-value project)"
 export TF_VAR_github_app_id="<app-id>"
 export TF_VAR_github_app_installation_id="<installation-id>"
 export TF_VAR_github_app_private_key="$(cat /path/to/argocd-app.private-key.pem)"
+export TF_VAR_dns_managed_zone_name="your-managed-zone-name"
 terraform init -backend-config="bucket=terraform-state-${TF_VAR_project_id}"
 ```
 
@@ -319,3 +323,6 @@ bucket created during bootstrap (`terraform-state-<project_id>`).
 
 Review the planned changes, then type `yes` to confirm and provision the
 infrastructure (GKE cluster, Argo CD, and GitOps repository connection).
+
+See [ExternalDNS with Workload Identity](docs/external-dns.md) for Cloud DNS
+access configuration and GitOps deployment steps.

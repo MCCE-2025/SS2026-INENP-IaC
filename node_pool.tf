@@ -1,5 +1,3 @@
-data "google_container_engine_versions" "versions" {}
-
 resource "google_service_account" "service_account" {
   account_id   = "sa-${var.project_id}"
   display_name = "Service Account for the cluster"
@@ -10,8 +8,6 @@ resource "google_container_node_pool" "node_pool" {
   cluster        = google_container_cluster.cluster.name
   location       = var.region
   node_locations = var.ha_node_zones
-
-  version = data.google_container_engine_versions.versions.release_channel_default_version["STABLE"]
 
   autoscaling {
     min_node_count  = length(var.ha_node_zones)
