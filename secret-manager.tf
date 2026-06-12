@@ -29,14 +29,15 @@ resource "google_service_account" "external_secrets" {
   display_name = "External Secrets Operator (GCP Secret Manager access)"
 }
 
-resource "google_secret_manager_secret_iam_member" "external_secrets_accessor" {
-  for_each  = google_secret_manager_secret.argocd_github_app
-  project   = var.project_id
-  secret_id = each.value.secret_id
-  role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${google_service_account.external_secrets.email}"
+resource "google_project_iam_member" "external_secrets_secret_accessor" {
+  project = var.project_id
+  role    = "roles/secretmanager.secretAccessor"
+  member  = "serviceAccount:${google_service_account.external_secrets.email}"
 
-  depends_on = [google_project_service.secretmanager]
+  depends_on = [
+    google_project_service.secretmanager,
+    google_service_account.external_secrets,
+  ]
 }
 
 resource "google_service_account_iam_member" "external_secrets_workload_identity" {
