@@ -21,10 +21,10 @@ platform_init() {
 
   echo
   echo "Note: upload GitHub App credentials to Secret Manager after apply (see README):"
-  echo "  APP_ID=\"<app-id>\" INSTALLATION_ID=\"<installation-id>\""
+  echo "  APP_ID=\"<app-id>\" INSTALLATION_ID=\"<installation-id>\" KEY_FILE=\"/path/to/argocd-app.private-key.pem\""
   echo "  gcloud secrets versions add argocd-github-app-id --data-file=<(printf \"\$APP_ID\")"
   echo "  gcloud secrets versions add argocd-github-app-installation-id --data-file=<(printf \"\$INSTALLATION_ID\")"
-  echo "  gcloud secrets versions add argocd-github-app-private-key --data-file=/path/to/argocd-app.private-key.pem"
+  echo "  gcloud secrets versions add argocd-github-app-private-key --data-file=\"\$KEY_FILE\""
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
