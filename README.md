@@ -43,13 +43,13 @@ source ./init.sh
 terraform apply
 
 # 4. Upload GitHub App credentials (after apply — the secrets above must exist first)
-APP_ID="<app-id>"
-INSTALLATION_ID="<installation-id>"
-KEY_FILE="/path/to/argocd-app.private-key.pem"
+export APP_ID="<app-id>"
+export INSTALLATION_ID="<installation-id>"
+export PRIVATE_KEY_FILE="/path/to/argocd-app.private-key.pem"
 
 gcloud secrets versions add argocd-github-app-id --data-file=<(printf "$APP_ID")
 gcloud secrets versions add argocd-github-app-installation-id --data-file=<(printf "$INSTALLATION_ID")
-gcloud secrets versions add argocd-github-app-private-key --data-file="$KEY_FILE"
+gcloud secrets versions add argocd-github-app-private-key --data-file="$PRIVATE_KEY_FILE"
 ```
 
 Confirm each `terraform apply` with `yes`. See [Infrastructure Provisioning](#infrastructure-provisioning)
@@ -294,13 +294,13 @@ Kubernetes secret in the `argocd` namespace.
 After provisioning the platform:
 
 ```bash
-APP_ID="<app-id>"
-INSTALLATION_ID="<installation-id>"
-KEY_FILE="/path/to/argocd-app.private-key.pem"
+export APP_ID="<app-id>"
+export INSTALLATION_ID="<installation-id>"
+export PRIVATE_KEY_FILE="/path/to/argocd-app.private-key.pem"
 
 gcloud secrets versions add argocd-github-app-id --data-file=<(printf "$APP_ID")
 gcloud secrets versions add argocd-github-app-installation-id --data-file=<(printf "$INSTALLATION_ID")
-gcloud secrets versions add argocd-github-app-private-key --data-file="$KEY_FILE"
+gcloud secrets versions add argocd-github-app-private-key --data-file="$PRIVATE_KEY_FILE"
 ```
 
 Use `printf` inside process substitution (not `echo`) so no trailing newline is
@@ -321,8 +321,8 @@ kubectl get secret gitops-repo -n argocd
 #### Key rotation
 
 1. In GitHub App settings, generate a new private key and download the `.pem` file.
-2. Upload the new key as a new secret version (set `KEY_FILE` to the downloaded `.pem` path):
-   `gcloud secrets versions add argocd-github-app-private-key --data-file="$KEY_FILE"`
+2. Upload the new key as a new secret version (set `PRIVATE_KEY_FILE` to the downloaded `.pem` path):
+   `gcloud secrets versions add argocd-github-app-private-key --data-file="$PRIVATE_KEY_FILE"`
 3. Disable or destroy the old secret version in Secret Manager (optional, after
    confirming Argo CD still syncs).
 4. In Argo CD, verify the GitOps repository connection and application sync status.
