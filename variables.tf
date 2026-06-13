@@ -37,6 +37,12 @@ variable "gitops_target_revision" {
   default     = "HEAD"
 }
 
+variable "backend_repo_url" {
+  description = "Backend application repository URL for Argo CD AppProject"
+  type        = string
+  default     = "https://github.com/MCCE-2025/SS2026-INENP-backend"
+}
+
 variable "dns_managed_zone_name" {
   description = "GCP resource name of the existing Cloud DNS managed zone (gcloud managed-zones list NAME column), not the DNS domain (dnsName)"
   type        = string
