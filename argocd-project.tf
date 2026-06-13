@@ -36,3 +36,41 @@ resource "kubernetes_manifest" "argocd_project_platform" {
 
   depends_on = [helm_release.argocd]
 }
+
+resource "kubernetes_manifest" "argocd_project_apps" {
+  manifest = {
+    apiVersion = "argoproj.io/v1alpha1"
+    kind       = "AppProject"
+    metadata = {
+      name      = "apps"
+      namespace = helm_release.argocd.namespace
+    }
+    spec = {
+      description = "Business applications deployed from separate app repositories"
+      sourceRepos = [
+        var.gitops_repo_url,
+        var.backend_repo_url,
+      ]
+      destinations = [
+        {
+          server    = "https://kubernetes.default.svc"
+          namespace = "*"
+        },
+      ]
+      clusterResourceWhitelist = [
+        {
+          group = "*"
+          kind  = "*"
+        },
+      ]
+      namespaceResourceWhitelist = [
+        {
+          group = "*"
+          kind  = "*"
+        },
+      ]
+    }
+  }
+
+  depends_on = [helm_release.argocd]
+}
