@@ -59,3 +59,15 @@ variable "external_dns_ksa" {
   type        = string
   default     = "external-dns"
 }
+
+variable "github_backend_repo" {
+  description = "GitHub repository (owner/name) allowed to push container images via Workload Identity Federation"
+  type        = string
+  default     = "MCCE-2025/SS2026-INENP-backend"
+}
+
+variable "artifact_registry_repo_id" {
+  description = "Artifact Registry repository ID for platform container images"
+  type        = string
+  default     = "platform-containers"
+}

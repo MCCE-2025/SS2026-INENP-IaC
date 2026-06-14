@@ -376,3 +376,34 @@ expecting Argo CD to sync the GitOps repository.
 
 See [ExternalDNS with Workload Identity](docs/external-dns.md) for Cloud DNS
 access configuration and GitOps deployment steps.
+
+### GitHub Actions → Artifact Registry (backend CI)
+
+Terraform provisions an Artifact Registry Docker repository, a GitHub Actions
+Workload Identity Federation pool/provider, and a deployer service account so the
+backend release workflow can push images keylessly (no JSON keys or secrets).
+
+After `terraform apply`, configure these **repository variables** on
+`MCCE-2025/SS2026-INENP-backend` (Settings → Secrets and variables → Actions →
+Variables):
+
+| GitHub variable | Terraform output |
+| --- | --- |
+| `GCP_PROJECT_ID` | `project_id` |
+| `GAR_LOCATION` | `artifact_registry_location` |
+| `GAR_REPOSITORY` | `artifact_registry_repository` |
+| `GCP_WIF_PROVIDER` | `workload_identity_provider` |
+| `GCP_SERVICE_ACCOUNT` | `github_actions_service_account` |
+
+Retrieve values with:
+
+```bash
+terraform output -raw project_id
+terraform output -raw artifact_registry_location
+terraform output -raw artifact_registry_repository
+terraform output -raw workload_identity_provider
+terraform output -raw github_actions_service_account
+```
+
+The release workflow continues to push to GHCR and additionally pushes the same
+tags to `${GAR_LOCATION}-docker.pkg.dev/${GCP_PROJECT_ID}/${GAR_REPOSITORY}/<image>`.
