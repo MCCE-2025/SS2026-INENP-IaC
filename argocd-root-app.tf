@@ -15,6 +15,7 @@ resource "helm_release" "argocd_root_app" {
   depends_on = [
     helm_release.argocd,
     kubectl_manifest.gitops_repo_external_secret,
+    kubectl_manifest.backend_repo_external_secret,
     kubernetes_manifest.argocd_project_platform,
     kubernetes_manifest.argocd_project_apps,
   ]
