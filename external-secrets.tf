@@ -176,3 +176,44 @@ resource "kubectl_manifest" "backend_repo_external_secret" {
     kubectl_manifest.cluster_secret_store,
   ]
 }
+
+data "google_secret_manager_secret_version" "argocd_github_app_id" {
+  secret  = google_secret_manager_secret.argocd_github_app["argocd-github-app-id"].secret_id
+  project = var.project_id
+}
+
+data "google_secret_manager_secret_version" "argocd_github_app_installation_id" {
+  secret  = google_secret_manager_secret.argocd_github_app["argocd-github-app-installation-id"].secret_id
+  project = var.project_id
+}
+
+resource "kubectl_manifest" "backend_ghcr_github_access_token" {
+  yaml_body = yamlencode({
+    apiVersion = "generators.external-secrets.io/v1alpha1"
+    kind       = "GithubAccessToken"
+    metadata = {
+      name      = "ghcr-token"
+      namespace = "backend"
+    }
+    spec = {
+      appID     = chomp(data.google_secret_manager_secret_version.argocd_github_app_id.secret_data)
+      installID = chomp(data.google_secret_manager_secret_version.argocd_github_app_installation_id.secret_data)
+      permissions = {
+        packages = "read"
+      }
+      auth = {
+        privateKey = {
+          secretRef = {
+            name = "github-app-config"
+            key  = "key"
+          }
+        }
+      }
+    }
+  })
+
+  depends_on = [
+    helm_release.external_secrets,
+    kubectl_manifest.cluster_secret_store,
+  ]
+}
