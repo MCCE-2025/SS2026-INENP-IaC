@@ -10,3 +10,8 @@ provider "google" {
     env     = "classroom"
   }
 }
+
+provider "github" {
+  owner = split("/", var.github_backend_repo)[0]
+  # Authenticate with GITHUB_TOKEN or GH_TOKEN (Actions variables: Read and write on the backend repo).
+}

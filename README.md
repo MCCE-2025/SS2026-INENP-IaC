@@ -17,7 +17,11 @@ Prerequisites:
 
 - [Google Cloud SDK](#authenticate-with-google-cloud)
 - [Terraform](#install-terraform)
-- [GitHub App for Argo CD](#github-app-argo-cd).
+- [GitHub App for Argo CD](#github-app-argo-cd)
+- GitHub token with **Actions variables: Read and write** on
+  `MCCE-2025/SS2026-INENP-backend` (for syncing CI variables during
+  `terraform apply`; see
+  [GitHub Actions → Artifact Registry](#github-actions--artifact-registry-backend-ci))
 
 ```bash
 # 1. Log in to Google Cloud and select your project
@@ -38,8 +42,11 @@ cd ..
 # see Prerequisites for how to create the GitHub App for Argo CD
 # managed zone resource name (NAME column), not the DNS domain — see docs/external-dns.md
 export TF_VAR_dns_managed_zone_name="your-managed-zone-name"
+# fine-grained PAT (Actions variables: Read and write) or classic PAT with repo scope
+export GITHUB_TOKEN="<token>"
 source ./init.sh
 # Creates empty Secret Manager containers; apply does not need credential values yet.
+# Also syncs GCP/WIF variables to MCCE-2025/SS2026-INENP-backend via the GitHub provider.
 terraform apply
 
 # 4. Upload GitHub App credentials (after apply — the secrets above must exist first)
@@ -383,27 +390,28 @@ Terraform provisions an Artifact Registry Docker repository, a GitHub Actions
 Workload Identity Federation pool/provider, and a deployer service account so the
 backend release workflow can push images keylessly (no JSON keys or secrets).
 
-After `terraform apply`, configure these **repository variables** on
-`MCCE-2025/SS2026-INENP-backend` (Settings → Secrets and variables → Actions →
-Variables):
+Terraform also writes these **repository variables** on
+`MCCE-2025/SS2026-INENP-backend` (via the GitHub provider):
 
-| GitHub variable | Terraform output |
+| GitHub variable | Source |
 | --- | --- |
-| `GCP_PROJECT_ID` | `project_id` |
-| `GAR_LOCATION` | `artifact_registry_location` |
-| `GAR_REPOSITORY` | `artifact_registry_repository` |
-| `GCP_WIF_PROVIDER` | `workload_identity_provider` |
-| `GCP_SERVICE_ACCOUNT` | `github_actions_service_account` |
+| `GCP_PROJECT_ID` | `var.project_id` |
+| `GAR_LOCATION` | Artifact Registry location |
+| `GAR_REPOSITORY` | Artifact Registry repository ID |
+| `GCP_WIF_PROVIDER` | WIF provider resource name |
+| `GCP_SERVICE_ACCOUNT` | deployer service account email |
 
-Retrieve values with:
+Before `terraform apply`, export a GitHub token with **Actions variables: Read
+and write** on the backend repository (fine-grained PAT or classic PAT with
+`repo` scope). The provider reads `GITHUB_TOKEN` or `GH_TOKEN`:
 
 ```bash
-terraform output -raw project_id
-terraform output -raw artifact_registry_location
-terraform output -raw artifact_registry_repository
-terraform output -raw workload_identity_provider
-terraform output -raw github_actions_service_account
+export GITHUB_TOKEN="<token>"
+terraform apply
 ```
+
+CI itself remains keyless (WIF); the token is only needed locally when running
+Terraform to sync variables into the backend repo.
 
 The release workflow continues to push to GHCR and additionally pushes the same
 tags to `${GAR_LOCATION}-docker.pkg.dev/${GCP_PROJECT_ID}/${GAR_REPOSITORY}/<image>`.
