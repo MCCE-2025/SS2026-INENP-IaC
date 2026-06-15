@@ -43,6 +43,12 @@ variable "backend_repo_url" {
   default     = "https://github.com/MCCE-2025/SS2026-INENP-backend"
 }
 
+variable "backend_github_repo" {
+  description = "GitHub owner/repo of the backend, used to scope the Workload Identity Federation binding for CI image pushes"
+  type        = string
+  default     = "MCCE-2025/SS2026-INENP-backend"
+}
+
 variable "dns_managed_zone_name" {
   description = "GCP resource name of the existing Cloud DNS managed zone (gcloud managed-zones list NAME column), not the DNS domain (dnsName)"
   type        = string
