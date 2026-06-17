@@ -30,9 +30,10 @@ resource "google_iam_workload_identity_pool_provider" "github" {
     "attribute.ref"        = "assertion.ref"
   }
 
-  # Restrict which tokens this provider will accept to the backend repository,
-  # preventing any other GitHub repo from impersonating the CI service account.
-  attribute_condition = "assertion.repository == '${var.backend_github_repo}'"
+  # Restrict which tokens this provider will accept to the application
+  # repositories, preventing any other GitHub repo from impersonating the CI
+  # service account.
+  attribute_condition = "assertion.repository in ['${var.backend_github_repo}', '${var.frontend_github_repo}']"
 
   oidc {
     issuer_uri = "https://token.actions.githubusercontent.com"
@@ -43,6 +44,12 @@ resource "google_service_account_iam_member" "ci_image_push_wif" {
   service_account_id = google_service_account.ci_image_push.name
   role               = "roles/iam.workloadIdentityUser"
   member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github.name}/attribute.repository/${var.backend_github_repo}"
+}
+
+resource "google_service_account_iam_member" "ci_image_push_wif_frontend" {
+  service_account_id = google_service_account.ci_image_push.name
+  role               = "roles/iam.workloadIdentityUser"
+  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github.name}/attribute.repository/${var.frontend_github_repo}"
 }
 
 output "ci_wif_provider" {

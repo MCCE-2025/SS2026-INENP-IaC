@@ -52,6 +52,7 @@ resource "kubernetes_manifest" "argocd_project_apps" {
       sourceRepos = [
         var.gitops_repo_url,
         var.backend_repo_url,
+        var.frontend_repo_url,
       ]
       destinations = [
         {

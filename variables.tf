@@ -49,6 +49,18 @@ variable "backend_github_repo" {
   default     = "MCCE-2025/SS2026-INENP-backend"
 }
 
+variable "frontend_repo_url" {
+  description = "Frontend application repository URL for Argo CD AppProject"
+  type        = string
+  default     = "https://github.com/MCCE-2025/SS2026-INENP-frontend"
+}
+
+variable "frontend_github_repo" {
+  description = "GitHub owner/repo of the frontend, used to scope the Workload Identity Federation binding for CI image pushes"
+  type        = string
+  default     = "MCCE-2025/SS2026-INENP-frontend"
+}
+
 variable "dns_managed_zone_name" {
   description = "GCP resource name of the existing Cloud DNS managed zone (gcloud managed-zones list NAME column), not the DNS domain (dnsName)"
   type        = string
