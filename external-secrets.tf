@@ -176,3 +176,66 @@ resource "kubectl_manifest" "backend_repo_external_secret" {
     kubectl_manifest.cluster_secret_store,
   ]
 }
+
+resource "kubectl_manifest" "frontend_repo_external_secret" {
+  yaml_body = yamlencode({
+    apiVersion = "external-secrets.io/v1"
+    kind       = "ExternalSecret"
+    metadata = {
+      name      = "frontend-repo"
+      namespace = "argocd"
+    }
+    spec = {
+      refreshInterval = "1h"
+      secretStoreRef = {
+        name = "gcp-secret-manager"
+        kind = "ClusterSecretStore"
+      }
+      target = {
+        name           = "frontend-repo"
+        creationPolicy = "Owner"
+        template = {
+          engineVersion = "v2"
+          metadata = {
+            labels = {
+              "argocd.argoproj.io/secret-type" = "repository"
+            }
+          }
+          data = {
+            type                    = "git"
+            url                     = var.frontend_repo_url
+            githubAppID             = "{{ .githubAppID }}"
+            githubAppInstallationID = "{{ .githubAppInstallationID }}"
+            githubAppPrivateKey     = "{{ .githubAppPrivateKey }}"
+          }
+        }
+      }
+      data = [
+        {
+          secretKey = "githubAppPrivateKey"
+          remoteRef = {
+            key = google_secret_manager_secret.argocd_github_app["argocd-github-app-private-key"].secret_id
+          }
+        },
+        {
+          secretKey = "githubAppID"
+          remoteRef = {
+            key = google_secret_manager_secret.argocd_github_app["argocd-github-app-id"].secret_id
+          }
+        },
+        {
+          secretKey = "githubAppInstallationID"
+          remoteRef = {
+            key = google_secret_manager_secret.argocd_github_app["argocd-github-app-installation-id"].secret_id
+          }
+        },
+      ]
+    }
+  })
+
+  depends_on = [
+    helm_release.external_secrets,
+    helm_release.argocd,
+    kubectl_manifest.cluster_secret_store,
+  ]
+}
