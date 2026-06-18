@@ -14,6 +14,7 @@ resource "kubernetes_manifest" "argocd_project_platform" {
         "https://kubernetes-sigs.github.io/external-dns/",
         "https://charts.jetstack.io",
         "https://kyverno.github.io/kyverno/",
+        "https://kubernetes.github.io/ingress-nginx",
       ]
       destinations = [
         {
