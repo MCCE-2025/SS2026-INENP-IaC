@@ -239,3 +239,77 @@ resource "kubectl_manifest" "frontend_repo_external_secret" {
     kubectl_manifest.cluster_secret_store,
   ]
 }
+
+resource "kubectl_manifest" "cloud_sql_password_crossplane_external_secret" {
+  yaml_body = yamlencode({
+    apiVersion = "external-secrets.io/v1"
+    kind       = "ExternalSecret"
+    metadata = {
+      name      = "cloud-sql-app-password"
+      namespace = "crossplane-system"
+    }
+    spec = {
+      refreshInterval = "1h"
+      secretStoreRef = {
+        name = "gcp-secret-manager"
+        kind = "ClusterSecretStore"
+      }
+      target = {
+        name           = "cloud-sql-app-password"
+        creationPolicy = "Owner"
+      }
+      data = [
+        {
+          secretKey = "password"
+          remoteRef = {
+            key = google_secret_manager_secret.cloud_sql_app_password.secret_id
+          }
+        },
+      ]
+    }
+  })
+
+  depends_on = [
+    helm_release.external_secrets,
+    helm_release.argocd,
+    kubectl_manifest.cluster_secret_store,
+    google_secret_manager_secret_version.cloud_sql_app_password,
+  ]
+}
+
+resource "kubectl_manifest" "cloud_sql_password_backend_external_secret" {
+  yaml_body = yamlencode({
+    apiVersion = "external-secrets.io/v1"
+    kind       = "ExternalSecret"
+    metadata = {
+      name      = "cloud-sql-app-password"
+      namespace = "backend"
+    }
+    spec = {
+      refreshInterval = "1h"
+      secretStoreRef = {
+        name = "gcp-secret-manager"
+        kind = "ClusterSecretStore"
+      }
+      target = {
+        name           = "cloud-sql-app-password"
+        creationPolicy = "Owner"
+      }
+      data = [
+        {
+          secretKey = "password"
+          remoteRef = {
+            key = google_secret_manager_secret.cloud_sql_app_password.secret_id
+          }
+        },
+      ]
+    }
+  })
+
+  depends_on = [
+    helm_release.external_secrets,
+    helm_release.argocd,
+    kubectl_manifest.cluster_secret_store,
+    google_secret_manager_secret_version.cloud_sql_app_password,
+  ]
+}
