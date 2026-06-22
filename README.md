@@ -50,6 +50,11 @@ export PRIVATE_KEY_FILE="/path/to/argocd-app.private-key.pem"
 gcloud secrets versions add argocd-github-app-id --data-file=<(printf "$APP_ID")
 gcloud secrets versions add argocd-github-app-installation-id --data-file=<(printf "$INSTALLATION_ID")
 gcloud secrets versions add argocd-github-app-private-key --data-file="$PRIVATE_KEY_FILE"
+
+# 5. Upload the AVWX weather API token (after apply) — see "AVWX API token" below.
+#    Note the required "Token " prefix.
+printf 'Token <your-avwx-token>' \
+  | gcloud secrets versions add avwx-api-key --data-file=-
 ```
 
 Confirm each `terraform apply` with `yes`. See [Infrastructure Provisioning](#infrastructure-provisioning)
@@ -326,6 +331,48 @@ kubectl get secret gitops-repo -n argocd
 3. Disable or destroy the old secret version in Secret Manager (optional, after
    confirming Argo CD still syncs).
 4. In Argo CD, verify the GitOps repository connection and application sync status.
+
+### AVWX API token (weather: METAR / nearest airport)
+
+The backend fetches METAR and nearest-airport data from
+[avwx.rest](https://avwx.rest). This requires an API token. (The forecast and
+geocoding data come from open-meteo, which needs no token.)
+
+The token lives **only in the backend** — it is never built into the frontend
+image or sent to the browser. As with the GitHub App credentials, Terraform
+creates an empty Secret Manager container (`avwx-api-key`) and you upload the
+value manually; External Secrets Operator then syncs it into an `api-keys`
+Kubernetes secret in each tenant namespace.
+
+#### Obtain the token
+
+1. Sign up at [account.avwx.rest](https://account.avwx.rest/) (a free tier exists).
+2. Open the **Tokens** section and **generate a token**.
+3. Copy the token value.
+
+#### Upload the token
+
+After `terraform apply` has created the `avwx-api-key` secret container:
+
+```bash
+# IMPORTANT: include the "Token " prefix — the backend sends this value verbatim
+# as the HTTP "Authorization" header, which avwx expects as "Token <token>".
+printf 'Token <your-avwx-token>' \
+  | gcloud secrets versions add avwx-api-key --data-file=-
+```
+
+Use `printf` (not `echo`) so no trailing newline is stored.
+
+ESO picks up the new version within its refresh interval (default 1 hour), or
+restart the ESO controller to apply it immediately. The backend reads the token
+from the `api-keys` secret on its next pod start.
+
+Verify sync (per tenant namespace, e.g. `tenant-a`):
+
+```bash
+kubectl get externalsecret api-keys -n tenant-a
+kubectl get secret api-keys -n tenant-a
+```
 
 ### Result
 
