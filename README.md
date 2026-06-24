@@ -1,469 +1,93 @@
-# Infrastructure as Code Repository
+# INENP Infrastructure as Code
 
-This repository contains the Infrastructure as Code (IaC) configuration files
-and related resources for the project infrastructure.
+This repository bootstraps and provisions the cloud infrastructure for the INENP Weather App platform (WS2026). It creates the Terraform state backend, GKE cluster, Argo CD bootstrap, platform identities, Secret Manager containers, Workload Identity bindings, and supporting GCP resources used by the GitOps, frontend, and backend repositories.
 
-## Group G
+## Documentation
 
-| Name | Email |
-| --- | --- |
-| Michael Lang | <2510781033@hochschule-burgenland.at> |
-| Nemanja Filipović | <2510781028@hochschule-burgenland.at> |
-| Andreas Werschlan | <2510781034@hochschule-burgenland.at> |
+- **Project overview and repository structure:** [docs/overview.md](docs/overview.md)
+- **Provisioning steps:** [docs/provisioning.md](docs/provisioning.md)
+- **Infrastructure services and responsibilities:** [docs/services.md](docs/services.md)
+- **ExternalDNS details:** [docs/external-dns.md](docs/external-dns.md)
+
+Related repositories:
+
+| Repository | Role |
+|---|---|
+| [SS2026-INENP-GitOps](https://github.com/MCCE-2025/SS2026-INENP-GitOps) | Argo CD Applications, platform manifests, tenant configuration |
+| [SS2026-INENP-backend](https://github.com/MCCE-2025/SS2026-INENP-backend) | Spring Boot backend source, Helm chart, backend release workflow |
+| [SS2026-INENP-frontend](https://github.com/MCCE-2025/SS2026-INENP-frontend) | Quasar/Vue frontend source, Helm chart, frontend release workflow |
 
 ## Quickstart
 
-Prerequisites:
-
-- [Google Cloud SDK](#authenticate-with-google-cloud)
-- [Terraform](#install-terraform)
-- [GitHub App for Argo CD](#github-app-argo-cd).
-
 ```bash
-# 1. Log in to Google Cloud and select your project
+# 1. Authenticate and select the target project
 gcloud auth login
 gcloud auth application-default login
-# list available projects
-gcloud projects list
-# configure the project you want to deploy to
 gcloud config set project <your-project-id>
 
-# 2. Bootstrap the Terraform state bucket
+# 2. Bootstrap Terraform remote state
 cd bootstrap
 source ./init.sh
 terraform apply
 
-# 3. Provision the platform (from the repository root)
+# 3. Provision the platform
 cd ..
-# see Prerequisites for how to create the GitHub App for Argo CD
-# managed zone resource name (NAME column), not the DNS domain — see docs/external-dns.md
-export TF_VAR_dns_managed_zone_name="your-managed-zone-name"
+export TF_VAR_dns_managed_zone_name="<managed-zone-resource-name>"
 source ./init.sh
-# Creates empty Secret Manager containers; apply does not need credential values yet.
 terraform apply
 
-# 4. Upload GitHub App credentials (after apply — the secrets above must exist first)
-export APP_ID="<app-id>"
-export INSTALLATION_ID="<installation-id>"
-export PRIVATE_KEY_FILE="/path/to/argocd-app.private-key.pem"
-
+# 4. Upload required out-of-band secret values after Terraform created the
+#    Secret Manager containers.
 gcloud secrets versions add argocd-github-app-id --data-file=<(printf "$APP_ID")
 gcloud secrets versions add argocd-github-app-installation-id --data-file=<(printf "$INSTALLATION_ID")
 gcloud secrets versions add argocd-github-app-private-key --data-file="$PRIVATE_KEY_FILE"
-
-# 5. Upload the AVWX weather API token (after apply) — see "AVWX API token" below.
-#    Note the required "Token " prefix.
-printf 'Token <your-avwx-token>' \
-  | gcloud secrets versions add avwx-api-key --data-file=-
+printf 'Token <your-avwx-token>' | gcloud secrets versions add avwx-api-key --data-file=-
 ```
 
-Confirm each `terraform apply` with `yes`. See [Infrastructure Provisioning](#infrastructure-provisioning)
-for detailed steps and explanations.
+See [docs/provisioning.md](docs/provisioning.md) for the full step-by-step flow.
 
-## Access Argo CD
+## Access
 
-After provisioning, open the Argo CD UI from your machine via `kubectl` port-forward.
-
-Prerequisites: [Google Cloud SDK](#authenticate-with-google-cloud) and `kubectl`
-(`gcloud components install kubectl`).
+After provisioning, configure `kubectl` for the cluster:
 
 ```bash
-# 1. Configure kubectl for the GKE cluster (project from active gcloud config / TF_VAR_project_id)
 gcloud container clusters get-credentials platform-gke-cluster \
   --region europe-west3 \
   --project "$(gcloud config get-value project)"
-
-# 2. Verify the cluster and Argo CD (optional)
-kubectl get nodes
-kubectl get services -n argocd
-
-# 3. Fetch the initial admin password (username: admin)
-kubectl get secret argocd-initial-admin-secret -n argocd \
-  -o jsonpath="{.data.password}" | base64 -d; echo
-
-# 4. Forward the Argo CD server to localhost (keep this running)
-kubectl port-forward svc/argocd-server -n argocd 8080:443
 ```
 
-Open [https://localhost:8080](https://localhost:8080) and log in with username `admin`
-and the password from step 3. Stop the port-forward with `Ctrl+C` when done.
+Argo CD is later exposed through GitOps at:
 
-## Local Linting
+```text
+https://argocd.inenp.werschlan.at
+```
 
-Install the required linters.
+The initial admin password can be read from the cluster:
 
-**macOS (Homebrew):**
+```bash
+kubectl get secret argocd-initial-admin-secret -n argocd \
+  -o jsonpath="{.data.password}" | base64 -d; echo
+```
+
+## Local Checks
+
+Install and run the repository hooks:
 
 ```bash
 brew install yamllint markdownlint-cli2 trivy
-```
-
-**Linux (Debian/Ubuntu):**
-
-```bash
-sudo apt-get update
-sudo apt-get install -y yamllint
-
-# markdownlint-cli2 (requires Node.js)
-npm install -g markdownlint-cli2
-
-# Trivy
-sudo apt-get install -y wget apt-transport-https gnupg lsb-release
-wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key \
-  | sudo gpg --dearmor -o /usr/share/keyrings/trivy.gpg
-echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] \
-  https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" \
-  | sudo tee /etc/apt/sources.list.d/trivy.list
-sudo apt-get update && sudo apt-get install -y trivy
-```
-
-### Pre-commit hook
-
-After installing the linters above, enable the repository git hooks so the same
-checks run automatically before each commit:
-
-```bash
 ./.githooks/install
-```
-
-This sets `core.hooksPath` to `.githooks/` and runs `yamllint`, `markdownlint-cli2`,
-and `trivy config` on every commit.
-
-To run the same checks without committing:
-
-```bash
 ./.githooks/pre-commit
 ```
 
-## Infrastructure Provisioning
+## AI-assisted development
 
-This repository uses Terraform to provision the required cloud infrastructure.
+We used AI tools (**Cursor** and **ChatGPT**) as support throughout the project - not as a replacement for review and ownership. They helped draft:
 
-Before provisioning the main infrastructure, the Terraform backend must be
-bootstrapped. The bootstrap step creates a Google Cloud Storage bucket for
-Terraform remote state.
+- GitHub issues
+- Pull request descriptions
+- Terraform configuration
+- GitOps bootstrap configuration
+- Workload Identity and Secret Manager wiring
+- Documentation (including this repo's `docs/`)
 
-### Authenticate with Google Cloud
-
-Install the Google Cloud SDK.
-
-**macOS (Homebrew):**
-
-```bash
-brew install --cask google-cloud-sdk
-```
-
-**Linux (Debian/Ubuntu):**
-
-```bash
-curl https://packages.cloud.google.com/apt/doc/apt-key.gpg \
-  | sudo gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg
-echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] \
-  https://packages.cloud.google.com/apt cloud-sdk main" \
-  | sudo tee /etc/apt/sources.list.d/google-cloud-sdk.list
-sudo apt-get update && sudo apt-get install -y google-cloud-cli
-```
-
-Alternatively, use the interactive installer (works on most Linux distributions):
-
-```bash
-curl https://sdk.cloud.google.com | bash
-exec -l $SHELL
-```
-
-Log in with your Google account and configure Application Default Credentials
-(used by Terraform):
-
-```bash
-gcloud auth login
-gcloud auth application-default login
-```
-
-Set the active project (required for `init.sh`, `bootstrap/init.sh`, and Terraform):
-
-```bash
-gcloud config set project <your-project-id>
-```
-
-Verify the configuration:
-
-```bash
-gcloud config get-value project
-gcloud auth list
-```
-
-Alternatively, set `GOOGLE_APPLICATION_CREDENTIALS` to a service account key
-file path (see `provider.tf`).
-
-### Install Terraform
-
-Install Terraform.
-
-**macOS (Homebrew):**
-
-```bash
-brew tap hashicorp/tap
-brew install hashicorp/tap/terraform
-```
-
-**Linux (Debian/Ubuntu):**
-
-```bash
-wget -O- https://apt.releases.hashicorp.com/gpg \
-  | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
-echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] \
-  https://apt.releases.hashicorp.com $(lsb_release -cs) main" \
-  | sudo tee /etc/apt/sources.list.d/hashicorp.list
-sudo apt-get update && sudo apt-get install -y terraform
-```
-
-Verify the installation:
-
-```bash
-terraform version
-```
-
-### Bootstrap Terraform Backend
-
-Navigate to the bootstrap directory, source the init script, and apply:
-
-```bash
-cd bootstrap
-source ./init.sh
-```
-
-The init script reads the active gcloud project, exports `TF_VAR_project_id`
-into your shell, and runs `terraform init`. No project ID is hardcoded. Use
-`source` (not `./init.sh`) so the variable is available for `terraform apply`.
-
-To initialize manually instead:
-
-```bash
-export TF_VAR_project_id="$(gcloud config get-value project)"
-terraform init
-```
-
-Apply the bootstrap configuration:
-
-```bash
-terraform apply
-```
-
-Confirm the execution with:
-
-```text
-yes
-```
-
-Terraform will create a Google Cloud Storage bucket.
-This bucket will be used as the remote backend for storing the Terraform state.
-
-### GitHub App (Argo CD)
-
-Argo CD needs read access to the GitOps repository
-(`MCCE-2025/SS2026-INENP-GitOps`). It authenticates as a GitHub App: Argo CD
-exchanges the app private key for short-lived installation tokens, so no
-long-lived, user-bound token is stored in the cluster.
-
-Create the app once per organization:
-
-1. Open GitHub → **Organizations** → `MCCE-2025` → **Settings** →
-   **Developer settings** → **GitHub Apps** → **New GitHub App**
-2. Configure the app:
-   - **GitHub App name:** e.g. `argocd-gitops-reader`
-   - **Homepage URL:** any URL (e.g. this repository)
-   - **Webhook:** uncheck **Active** (no webhook needed)
-   - **Repository permissions:**
-     - **Contents:** Read-only
-     - **Metadata:** Read-only
-   - **Where can this GitHub App be installed?** Only on this account
-3. Click **Create GitHub App** and note the **App ID** shown on the app page
-4. In the app settings, under **Private keys**, click
-   **Generate a private key** and store the downloaded `.pem` file securely
-   (never commit it; `*.pem` is gitignored)
-5. Click **Install App**, install it on the `MCCE-2025` organization with
-   **Only select repositories** → `SS2026-INENP-GitOps`
-6. Note the **Installation ID** from the installation page URL:
-   `https://github.com/organizations/MCCE-2025/settings/installations/<installation-id>`
-
-### GitHub App credentials in Secret Manager
-
-GitHub App credentials are **not** passed through Terraform or environment
-variables. Terraform creates empty secret containers in GCP Secret Manager; you
-upload the App ID, Installation ID, and private key (PEM) manually after the first
-`terraform apply`. External Secrets Operator (ESO) syncs them into the `gitops-repo`
-Kubernetes secret in the `argocd` namespace.
-
-#### Initial upload
-
-After provisioning the platform:
-
-```bash
-export APP_ID="<app-id>"
-export INSTALLATION_ID="<installation-id>"
-export PRIVATE_KEY_FILE="/path/to/argocd-app.private-key.pem"
-
-gcloud secrets versions add argocd-github-app-id --data-file=<(printf "$APP_ID")
-gcloud secrets versions add argocd-github-app-installation-id --data-file=<(printf "$INSTALLATION_ID")
-gcloud secrets versions add argocd-github-app-private-key --data-file="$PRIVATE_KEY_FILE"
-```
-
-Use `printf` inside process substitution (not `echo`) so no trailing newline is
-stored — Argo CD expects the exact App ID and Installation ID.
-
-On a fresh project, the ExternalSecret stays pending until all three secret
-versions exist. ESO picks up new versions within its refresh interval (default:
-1 hour) or after you restart the ESO controller.
-
-Verify sync:
-
-```bash
-kubectl get clustersecretstore gcp-secret-manager
-kubectl get externalsecret gitops-repo -n argocd
-kubectl get secret gitops-repo -n argocd
-```
-
-#### Key rotation
-
-1. In GitHub App settings, generate a new private key and download the `.pem` file.
-2. Upload the new key as a new secret version (set `PRIVATE_KEY_FILE` to the downloaded `.pem` path):
-   `gcloud secrets versions add argocd-github-app-private-key --data-file="$PRIVATE_KEY_FILE"`
-3. Disable or destroy the old secret version in Secret Manager (optional, after
-   confirming Argo CD still syncs).
-4. In Argo CD, verify the GitOps repository connection and application sync status.
-
-### AVWX API token (weather: METAR / nearest airport)
-
-The backend fetches METAR and nearest-airport data from
-[avwx.rest](https://avwx.rest). This requires an API token. (The forecast and
-geocoding data come from open-meteo, which needs no token.)
-
-The token lives **only in the backend** — it is never built into the frontend
-image or sent to the browser. As with the GitHub App credentials, Terraform
-creates an empty Secret Manager container (`avwx-api-key`) and you upload the
-value manually; External Secrets Operator then syncs it into an `api-keys`
-Kubernetes secret in each tenant namespace.
-
-#### Obtain the token
-
-1. Sign up at [account.avwx.rest](https://account.avwx.rest/) (a free tier exists).
-2. Open the **Tokens** section and **generate a token**.
-3. Copy the token value.
-
-#### Upload the token
-
-After `terraform apply` has created the `avwx-api-key` secret container:
-
-```bash
-# IMPORTANT: include the "Token " prefix — the backend sends this value verbatim
-# as the HTTP "Authorization" header, which avwx expects as "Token <token>".
-printf 'Token <your-avwx-token>' \
-  | gcloud secrets versions add avwx-api-key --data-file=-
-```
-
-Use `printf` (not `echo`) so no trailing newline is stored.
-
-ESO picks up the new version within its refresh interval (default 1 hour), or
-restart the ESO controller to apply it immediately. The backend reads the token
-from the `api-keys` secret on its next pod start.
-
-Verify sync (per tenant namespace, e.g. `tenant-a`):
-
-```bash
-kubectl get externalsecret api-keys -n tenant-a
-kubectl get secret api-keys -n tenant-a
-```
-
-### Dynatrace (observability / APM)
-
-Dynatrace monitoring is fully prepared in IaC + GitOps. To activate it you only
-need to **register and provide three values** — everything else (operator,
-DynaKube CR, token sync via ESO) is automated.
-
-The Dynatrace Operator is installed by Argo CD (`dynatrace-operator` app). The
-DynaKube custom resource is rendered by Terraform, with the two tokens synced
-from Secret Manager by ESO into the `dynakube` Secret — so no token is ever in
-Git or Terraform state.
-
-#### Obtain the values
-
-1. Sign up / log in at [dynatrace.com](https://www.dynatrace.com/) (a free trial
-   exists). Note your environment URL, e.g. `https://abc12345.live.dynatrace.com`.
-2. In **Access Tokens**, create two tokens:
-   - **Operator token** — scopes: `installer-download`, `kubernetes-monitoring`,
-     `entities.read`, `settings.read`, `settings.write`,
-     `activeGateTokenManagement.create`.
-   - **Data ingest token** — scope: `metrics.ingest` (also `logs.ingest` /
-     `openTelemetryTrace.ingest` if you want logs/traces).
-
-#### Provide the values
-
-After `terraform apply` has created the two secret containers
-(`dynatrace-api-token`, `dynatrace-data-ingest-token`):
-
-```bash
-# Tokens — use printf (not echo) so no trailing newline is stored.
-printf '<OPERATOR_API_TOKEN>' \
-  | gcloud secrets versions add dynatrace-api-token --data-file=-
-printf '<DATA_INGEST_TOKEN>' \
-  | gcloud secrets versions add dynatrace-data-ingest-token --data-file=-
-
-# Environment API URL (note the trailing /api). Set it and re-apply so the
-# DynaKube CR is created and Dynatrace starts monitoring.
-export TF_VAR_dynatrace_api_url="https://<env-id>.live.dynatrace.com/api"
-terraform apply
-```
-
-Until `TF_VAR_dynatrace_api_url` is set, the DynaKube CR is not created (the rest
-of the platform still applies cleanly). Once set and the tokens are uploaded,
-Dynatrace auto-discovers the cluster, pods, and the JVM backends.
-
-### Result
-
-After the bootstrap step has completed successfully, the project is ready to use
-remote Terraform state stored in Google Cloud Storage.
-
-### Provision Main Infrastructure
-
-After bootstrapping (creating the storage bucket for Terraform state), go to the
-repository root directory, source the init script, and apply:
-
-```bash
-cd ..
-export TF_VAR_dns_managed_zone_name="your-managed-zone-name"
-source ./init.sh
-```
-
-The init script reads the active gcloud project, exports `TF_VAR_project_id`
-into your shell, and runs `terraform init` with the matching state bucket
-(`terraform-state-<project_id>`). Use `source` (not `./init.sh`) so the variable
-is available for `terraform apply`.
-
-To initialize manually instead:
-
-```bash
-export TF_VAR_project_id="$(gcloud config get-value project)"
-export TF_VAR_dns_managed_zone_name="your-managed-zone-name"
-terraform init -backend-config="bucket=terraform-state-${TF_VAR_project_id}"
-```
-
-Apply the platform configuration:
-
-```bash
-terraform apply
-```
-
-The state bucket name is derived from the active project instead of being
-hardcoded. Terraform `backend` blocks cannot reference variables, so the bucket
-is supplied at init time via partial backend configuration. The name matches the
-bucket created during bootstrap (`terraform-state-<project_id>`).
-
-Review the planned changes, then type `yes` to confirm and provision the
-infrastructure (GKE cluster, Argo CD, ESO, and GitOps repository connection).
-
-Upload GitHub App credentials to Secret Manager as described in
-[GitHub App credentials in Secret Manager](#github-app-credentials-in-secret-manager) before
-expecting Argo CD to sync the GitOps repository.
-
-See [ExternalDNS with Workload Identity](docs/external-dns.md) for Cloud DNS
-access configuration and GitOps deployment steps.
+All AI-generated content was reviewed, adapted, and validated by the team before merge.
