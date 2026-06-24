@@ -48,7 +48,6 @@ This document defines the infrastructure services and responsibilities managed b
 | Crossplane GAR identity | `crossplane.tf` | Lets Crossplane manage Artifact Registry resources. |
 | Crossplane SQL identity | `crossplane-sql.tf` | Lets Crossplane manage Cloud SQL resources. |
 | Crossplane Storage identity | `crossplane-storage.tf` | Lets Crossplane manage the frontend GCS hosting bucket. |
-| OpenBao KMS identity | `openbao-autounseal.tf` | Lets OpenBao use Cloud KMS for auto-unseal. |
 
 ## Application Support
 
@@ -66,7 +65,6 @@ This document defines the infrastructure services and responsibilities managed b
 | --- | --- | --- |
 | Kargo | `kargo-secret.tf` | Prepares credentials consumed by the GitOps Kargo Helm deployment. |
 | Dynatrace | `dynatrace.tf` | Prepares token sync and optional DynaKube resource for observability/APM. |
-| OpenBao | `openbao-autounseal.tf` | Creates KMS key and identity for OpenBao auto-unseal. |
 
 ## CI and Local Quality Checks
 

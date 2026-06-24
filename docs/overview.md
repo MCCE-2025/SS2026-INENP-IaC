@@ -63,7 +63,6 @@ the Kubernetes platform and application state continuously.
 |-- crossplane*.tf
 |-- cert-manager.tf
 |-- kargo-secret.tf
-|-- openbao-autounseal.tf
 |-- dynatrace.tf
 `-- avwx-secret.tf
 ```
@@ -83,7 +82,7 @@ the Kubernetes platform and application state continuously.
 | `backend-cloudsql.tf`, `cloud-sql-*.tf` | Backend Cloud SQL identity, SQL API, and app password secret. |
 | `crossplane*.tf` | GCP service accounts and IAM bindings used by Crossplane providers in GitOps. |
 | `external-dns.tf`, `cert-manager.tf` | DNS IAM permissions for ExternalDNS and cert-manager DNS-01. |
-| `kargo-secret.tf`, `dynatrace.tf`, `openbao-autounseal.tf` | Optional platform service secrets and identities. |
+| `kargo-secret.tf`, `dynatrace.tf` | Optional platform service secrets and identities. |
 
 ## Repositories
 
@@ -131,8 +130,6 @@ Argo CD / GitOps
 | `ci_wif_provider` | GitHub Actions OIDC provider for app release workflows |
 | `ci_image_push_service_account` | CI service account for GAR pushes |
 | `kargo_admin_password` | Sensitive Kargo admin password |
-| `openbao_kms_key` | KMS key used for OpenBao auto-unseal |
-| `openbao_gcp_service_account` | GCP service account used by OpenBao |
 
 ## AI-assisted development
 

@@ -77,15 +77,3 @@ variable "external_dns_ksa" {
   type        = string
   default     = "external-dns"
 }
-
-variable "openbao_namespace" {
-  description = "Kubernetes namespace where OpenBao runs (must match the Argo Application destination)"
-  type        = string
-  default     = "openbao"
-}
-
-variable "openbao_ksa" {
-  description = "Kubernetes service account name used by the OpenBao server pod (chart default is the release name)"
-  type        = string
-  default     = "openbao"
-}
