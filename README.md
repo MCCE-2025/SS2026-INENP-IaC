@@ -390,7 +390,7 @@ Git or Terraform state.
 1. Sign up / log in at [dynatrace.com](https://www.dynatrace.com/) (a free trial
    exists). Note your environment URL, e.g. `https://abc12345.live.dynatrace.com`.
 2. In **Access Tokens**, create two tokens:
-   - **Operator token** — scopes: `installer-download`, `kubernetes-monitoring`,
+   - **Operator token** — scopes: `installer-download`  ,
      `entities.read`, `settings.read`, `settings.write`,
      `activeGateTokenManagement.create`.
    - **Data ingest token** — scope: `metrics.ingest` (also `logs.ingest` /
@@ -407,16 +407,22 @@ printf '<OPERATOR_API_TOKEN>' \
   | gcloud secrets versions add dynatrace-api-token --data-file=-
 printf '<DATA_INGEST_TOKEN>' \
   | gcloud secrets versions add dynatrace-data-ingest-token --data-file=-
-
-# Environment API URL (note the trailing /api). Set it and re-apply so the
-# DynaKube CR is created and Dynatrace starts monitoring.
-export TF_VAR_dynatrace_api_url="https://<env-id>.live.dynatrace.com/api"
-terraform apply
 ```
 
-Until `TF_VAR_dynatrace_api_url` is set, the DynaKube CR is not created (the rest
-of the platform still applies cleanly). Once set and the tokens are uploaded,
-Dynatrace auto-discovers the cluster, pods, and the JVM backends.
+The environment **API URL** is NOT a secret and is NOT a Terraform variable. Set it
+in the GitOps repo so Argo applies the DynaKube CR after the operator installs its
+CRD: edit `platform/dynatrace/dynakube.yaml` and replace the `apiUrl` placeholder
+with your environment URL (note the trailing `/api`):
+
+```yaml
+# SS2026-INENP-GitOps/platform/dynatrace/dynakube.yaml
+spec:
+  apiUrl: https://<env-id>.live.dynatrace.com/api
+```
+
+Once the tokens are uploaded and `apiUrl` is set, Argo applies the operator
+(`dynatrace-operator`) and then the DynaKube CR (`dynatrace-config`); Dynatrace
+auto-discovers the cluster, pods, and the JVM backends.
 
 ### Result
 
