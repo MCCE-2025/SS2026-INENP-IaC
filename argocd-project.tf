@@ -20,6 +20,8 @@ resource "kubernetes_manifest" "argocd_project_platform" {
         "oci://ghcr.io/akuity/kargo-charts",
         # OpenBao (secret manager) Helm chart repository.
         "https://openbao.github.io/openbao-helm",
+        # Dynatrace Operator (observability/APM) OCI Helm chart on public ECR.
+        "oci://public.ecr.aws/dynatrace",
       ]
       destinations = [
         {
