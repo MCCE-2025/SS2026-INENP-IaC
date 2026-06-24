@@ -1,6 +1,10 @@
 # INENP Infrastructure as Code
 
-This repository bootstraps and provisions the cloud infrastructure for the INENP Weather App platform (WS2026). It creates the Terraform state backend, GKE cluster, Argo CD bootstrap, platform identities, Secret Manager containers, Workload Identity bindings, and supporting GCP resources used by the GitOps, frontend, and backend repositories.
+This repository bootstraps and provisions the cloud infrastructure for the INENP Weather App platform
+(WS2026).
+
+It creates the Terraform state backend, GKE cluster, Argo CD bootstrap, platform identities,
+Secret Manager containers, Workload Identity bindings, and supporting GCP resources.
 
 ## Documentation
 
@@ -12,10 +16,10 @@ This repository bootstraps and provisions the cloud infrastructure for the INENP
 Related repositories:
 
 | Repository | Role |
-|---|---|
-| [SS2026-INENP-GitOps](https://github.com/MCCE-2025/SS2026-INENP-GitOps) | Argo CD Applications, platform manifests, tenant configuration |
-| [SS2026-INENP-backend](https://github.com/MCCE-2025/SS2026-INENP-backend) | Spring Boot backend source, Helm chart, backend release workflow |
-| [SS2026-INENP-frontend](https://github.com/MCCE-2025/SS2026-INENP-frontend) | Quasar/Vue frontend source, Helm chart, frontend release workflow |
+| --- | --- |
+| [SS2026-INENP-GitOps](https://github.com/MCCE-2025/SS2026-INENP-GitOps) | GitOps config |
+| [SS2026-INENP-backend](https://github.com/MCCE-2025/SS2026-INENP-backend) | Backend source |
+| [SS2026-INENP-frontend](https://github.com/MCCE-2025/SS2026-INENP-frontend) | Frontend source |
 
 ## Quickstart
 
@@ -81,7 +85,8 @@ brew install yamllint markdownlint-cli2 trivy
 
 ## AI-assisted development
 
-We used AI tools (**Cursor** and **ChatGPT**) as support throughout the project - not as a replacement for review and ownership. They helped draft:
+We used AI tools (**Cursor** and **ChatGPT**) as support throughout the project.
+They did not replace review and ownership. They helped draft:
 
 - GitHub issues
 - Pull request descriptions

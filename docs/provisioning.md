@@ -1,11 +1,13 @@
 # Provisioning Steps
 
-This document describes the provisioning flow end to end. The platform is intentionally split into a bootstrap phase and a main infrastructure phase.
+This document describes the provisioning flow end to end.
+
+The platform is intentionally split into a bootstrap phase and a main infrastructure phase.
 
 ## Prerequisites
 
 | Tool / input | Purpose |
-|---|---|
+| --- | --- |
 | Google Cloud SDK | Authentication, project selection, secret uploads, cluster credentials |
 | Terraform `>= 1.5.0` | Infrastructure provisioning |
 | `kubectl` | Cluster verification and Argo CD access |
@@ -28,7 +30,10 @@ Terraform reads the active project through the init scripts and exports it as `T
 
 ## Step 2 - Bootstrap the Terraform state bucket
 
-The main Terraform configuration uses a GCS backend. Because the backend bucket must exist before Terraform can use it, the `bootstrap/` configuration creates it first with local state.
+The main Terraform configuration uses a GCS backend.
+
+Because the backend bucket must exist before Terraform can use it, `bootstrap/` creates it first with
+local state.
 
 ```bash
 cd bootstrap
@@ -39,7 +44,7 @@ terraform apply
 What happens:
 
 | Action | File |
-|---|---|
+| --- | --- |
 | Reads active `gcloud` project and exports `TF_VAR_project_id` | `bootstrap/init.sh` |
 | Initializes Terraform with local backend | `bootstrap/main.tf` |
 | Creates `terraform-state-<project-id>` GCS bucket | `bootstrap/state-bucket.tf` |
@@ -53,7 +58,7 @@ Argo CD uses a GitHub App instead of a long-lived personal access token.
 Create the app in the `MCCE-2025` organization:
 
 | Setting | Value |
-|---|---|
+| --- | --- |
 | Webhook | disabled |
 | Repository permissions | `Contents: Read-only`, `Metadata: Read-only` |
 | Installation scope | selected repositories |
@@ -82,7 +87,7 @@ source ./init.sh
 What happens:
 
 | Action | File |
-|---|---|
+| --- | --- |
 | Reads active `gcloud` project | `init.sh` |
 | Exports `TF_VAR_project_id` | `init.sh` |
 | Derives state bucket name `terraform-state-<project-id>` | `init.sh` |
@@ -101,7 +106,7 @@ terraform apply
 This creates the base platform:
 
 | Step | What Terraform creates | Key files |
-|---|---|---|
+| --- | --- | --- |
 | 5.1 | GCP provider setup and required Terraform providers | `provider.tf`, `terraform.tf` |
 | 5.2 | VPC and subnet | `vpc.tf` |
 | 5.3 | GKE cluster with Workload Identity and advanced datapath | `cluster.tf` |
@@ -125,7 +130,9 @@ This creates the base platform:
 
 ## Step 6 - Upload GitHub App credentials
 
-Terraform creates the Secret Manager containers, but the sensitive values are uploaded manually so they do not enter Terraform state.
+Terraform creates the Secret Manager containers.
+
+The sensitive values are uploaded manually so they do not enter Terraform state.
 
 ```bash
 export APP_ID="<app-id>"
@@ -140,7 +147,7 @@ gcloud secrets versions add argocd-github-app-private-key --data-file="$PRIVATE_
 External Secrets Operator syncs these into Argo CD repository secrets:
 
 | Kubernetes Secret | Purpose |
-|---|---|
+| --- | --- |
 | `argocd/gitops-repo` | GitOps repository access |
 | `argocd/backend-repo` | Backend repository access |
 | `argocd/frontend-repo` | Frontend repository access |
@@ -154,23 +161,31 @@ printf 'Token <your-avwx-token>' \
   | gcloud secrets versions add avwx-api-key --data-file=-
 ```
 
-The value must include the `Token ` prefix because the backend sends it as the HTTP `Authorization` header.
+The value must include the `Token` prefix followed by a space because the backend sends it as the HTTP
+`Authorization` header.
 
 ## Step 8 - Optional Dynatrace activation
 
-Terraform creates empty Secret Manager containers for Dynatrace tokens. Upload token values and set the API URL when Dynatrace should be activated:
+Terraform creates empty Secret Manager containers for Dynatrace tokens.
+
+Upload token values when Dynatrace should be activated:
 
 ```bash
 printf '<OPERATOR_API_TOKEN>' \
   | gcloud secrets versions add dynatrace-api-token --data-file=-
 printf '<DATA_INGEST_TOKEN>' \
   | gcloud secrets versions add dynatrace-data-ingest-token --data-file=-
-
-export TF_VAR_dynatrace_api_url="https://<env-id>.live.dynatrace.com/api"
-terraform apply
 ```
 
-Until `TF_VAR_dynatrace_api_url` is set, the DynaKube CR is not created.
+The environment API URL is not a secret and is not a Terraform variable. Set it in the GitOps repo:
+
+```yaml
+# SS2026-INENP-GitOps/platform/dynatrace/dynakube.yaml
+spec:
+  apiUrl: https://<env-id>.live.dynatrace.com/api
+```
+
+After the tokens are uploaded and `apiUrl` is set, Argo CD applies the Dynatrace Operator and DynaKube CR.
 
 ## Step 9 - Configure kubectl and verify
 
@@ -210,7 +225,8 @@ terraform output ci_wif_provider
 terraform output ci_image_push_service_account
 ```
 
-These values are used by release workflows to push container images to Google Artifact Registry without service account keys.
+These values are used by release workflows to push container images to Google Artifact Registry without
+service account keys.
 
 ## Step 12 - OpenBao one-time initialization
 
