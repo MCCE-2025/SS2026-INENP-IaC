@@ -124,9 +124,8 @@ This creates the base platform:
 | 5.15 | Cloud SQL API and app password Secret Manager value | `cloud-sql-networking.tf`, `cloud-sql-secrets.tf` |
 | 5.16 | Crossplane provider service accounts and IAM | `crossplane.tf`, `crossplane-sql.tf`, `crossplane-storage.tf` |
 | 5.17 | Kargo admin and token signing secrets | `kargo-secret.tf` |
-| 5.18 | OpenBao KMS key and Workload Identity | `openbao-autounseal.tf` |
-| 5.19 | Dynatrace secret containers and optional DynaKube CR | `dynatrace.tf` |
-| 5.20 | AVWX Secret Manager container | `avwx-secret.tf` |
+| 5.18 | Dynatrace secret containers and optional DynaKube CR | `dynatrace.tf` |
+| 5.19 | AVWX Secret Manager container | `avwx-secret.tf` |
 
 ## Step 6 - Upload GitHub App credentials
 
@@ -227,13 +226,3 @@ terraform output ci_image_push_service_account
 
 These values are used by release workflows to push container images to Google Artifact Registry without
 service account keys.
-
-## Step 12 - OpenBao one-time initialization
-
-OpenBao uses GCP KMS auto-unseal, but it still needs one initial operator init after the GitOps deployment is running:
-
-```bash
-kubectl exec -ti openbao-0 -n openbao -- bao operator init
-```
-
-Store the recovery keys and root token securely. They must not be committed to Git or Terraform.
