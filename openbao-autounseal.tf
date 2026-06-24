@@ -39,10 +39,20 @@ resource "google_service_account" "openbao" {
   display_name = "OpenBao auto-unseal (Cloud KMS)"
 }
 
-# Only encrypt/decrypt on the single unseal key — least privilege, not project-wide.
+# Encrypt/decrypt on the single unseal key — least privilege, not project-wide.
 resource "google_kms_crypto_key_iam_member" "openbao_unseal" {
   crypto_key_id = google_kms_crypto_key.openbao_unseal.id
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
+  member        = "serviceAccount:${google_service_account.openbao.email}"
+}
+
+# OpenBao also performs a "key existence" check on startup, which needs
+# cloudkms.cryptoKeys.get — NOT included in cryptoKeyEncrypterDecrypter. Without
+# this the pod fails to unseal with "Permission 'cloudkms.cryptoKeys.get' denied".
+# cloudkms.viewer (key-scoped) provides exactly that read access.
+resource "google_kms_crypto_key_iam_member" "openbao_unseal_viewer" {
+  crypto_key_id = google_kms_crypto_key.openbao_unseal.id
+  role          = "roles/cloudkms.viewer"
   member        = "serviceAccount:${google_service_account.openbao.email}"
 }
 
