@@ -374,6 +374,50 @@ kubectl get externalsecret api-keys -n tenant-a
 kubectl get secret api-keys -n tenant-a
 ```
 
+### Dynatrace (observability / APM)
+
+Dynatrace monitoring is fully prepared in IaC + GitOps. To activate it you only
+need to **register and provide three values** — everything else (operator,
+DynaKube CR, token sync via ESO) is automated.
+
+The Dynatrace Operator is installed by Argo CD (`dynatrace-operator` app). The
+DynaKube custom resource is rendered by Terraform, with the two tokens synced
+from Secret Manager by ESO into the `dynakube` Secret — so no token is ever in
+Git or Terraform state.
+
+#### Obtain the values
+
+1. Sign up / log in at [dynatrace.com](https://www.dynatrace.com/) (a free trial
+   exists). Note your environment URL, e.g. `https://abc12345.live.dynatrace.com`.
+2. In **Access Tokens**, create two tokens:
+   - **Operator token** — scopes: `installer-download`, `kubernetes-monitoring`,
+     `entities.read`, `settings.read`, `settings.write`,
+     `activeGateTokenManagement.create`.
+   - **Data ingest token** — scope: `metrics.ingest` (also `logs.ingest` /
+     `openTelemetryTrace.ingest` if you want logs/traces).
+
+#### Provide the values
+
+After `terraform apply` has created the two secret containers
+(`dynatrace-api-token`, `dynatrace-data-ingest-token`):
+
+```bash
+# Tokens — use printf (not echo) so no trailing newline is stored.
+printf '<OPERATOR_API_TOKEN>' \
+  | gcloud secrets versions add dynatrace-api-token --data-file=-
+printf '<DATA_INGEST_TOKEN>' \
+  | gcloud secrets versions add dynatrace-data-ingest-token --data-file=-
+
+# Environment API URL (note the trailing /api). Set it and re-apply so the
+# DynaKube CR is created and Dynatrace starts monitoring.
+export TF_VAR_dynatrace_api_url="https://<env-id>.live.dynatrace.com/api"
+terraform apply
+```
+
+Until `TF_VAR_dynatrace_api_url` is set, the DynaKube CR is not created (the rest
+of the platform still applies cleanly). Once set and the tokens are uploaded,
+Dynatrace auto-discovers the cluster, pods, and the JVM backends.
+
 ### Result
 
 After the bootstrap step has completed successfully, the project is ready to use
