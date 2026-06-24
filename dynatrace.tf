@@ -11,7 +11,8 @@
 #   printf '<DATA_INGEST_TOKEN>'   | gcloud secrets versions add dynatrace-data-ingest-token \
 #     --project=<project> --data-file=-
 #
-# Set the environment apiUrl via TF_VAR_dynatrace_api_url (see variable below).
+# The environment apiUrl is set in the GitOps DynaKube manifest
+# (platform/dynatrace/dynakube.yaml), not here (apiUrl is not a secret).
 
 resource "google_secret_manager_secret" "dynatrace_api_token" {
   secret_id = "dynatrace-api-token"
@@ -88,54 +89,11 @@ resource "kubectl_manifest" "dynatrace_external_secret" {
   ]
 }
 
-# DynaKube custom resource. Rendered from Terraform because its only environment
-# specific input — apiUrl — comes from a TF variable (set once after you
-# register), while the tokens come from the ESO-synced "dynakube" Secret. The
-# Dynatrace Operator itself is installed via a GitOps Argo Application.
-#
-# Created only when dynatrace_api_url is set, so the platform applies cleanly
-# before you have a Dynatrace environment.
-resource "kubectl_manifest" "dynakube" {
-  count = var.dynatrace_api_url != "" ? 1 : 0
-
-  yaml_body = yamlencode({
-    apiVersion = "dynatrace.com/v1beta3"
-    kind       = "DynaKube"
-    metadata = {
-      name      = "dynakube"
-      namespace = "dynatrace"
-    }
-    spec = {
-      apiUrl = var.dynatrace_api_url
-      # Tokens come from the ESO-managed Secret of the same name.
-      tokens = "dynakube"
-      # Cloud-native full-stack: OneAgent (auto-instrumentation / APM, JVM deep
-      # dive) + an ActiveGate for Kubernetes API monitoring and metrics ingest.
-      oneAgent = {
-        cloudNativeFullStack = {}
-      }
-      activeGate = {
-        capabilities = [
-          "routing",
-          "kubernetes-monitoring",
-          "metrics-ingest",
-          "dynatrace-api",
-        ]
-        resources = {
-          requests = {
-            cpu    = "100m"
-            memory = "512Mi"
-          }
-          limits = {
-            cpu    = "500m"
-            memory = "1Gi"
-          }
-        }
-      }
-    }
-  })
-
-  depends_on = [
-    kubectl_manifest.dynatrace_external_secret,
-  ]
-}
+# NOTE: The DynaKube custom resource is NOT created here. It depends on the
+# DynaKube CRD, which is installed by the Dynatrace Operator via its GitOps Argo
+# Application — so creating the CR from Terraform in the same run fails with
+# "DynaKube isn't valid for cluster" (CRD not yet present). Instead, the DynaKube
+# CR lives in the GitOps repo (platform/dynatrace/dynakube.yaml) with sync-waves,
+# so Argo applies the operator (CRD) first and the CR after. Terraform only owns
+# the tokens (Secret Manager) and the ESO ExternalSecret above. Set the apiUrl in
+# that GitOps manifest.

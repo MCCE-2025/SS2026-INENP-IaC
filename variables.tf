@@ -89,9 +89,3 @@ variable "openbao_ksa" {
   type        = string
   default     = "openbao"
 }
-
-variable "dynatrace_api_url" {
-  description = "Dynatrace environment API URL, e.g. https://<env-id>.live.dynatrace.com/api (set via TF_VAR_dynatrace_api_url after you register). Used to render the DynaKube apiUrl ConfigMap consumed by the GitOps DynaKube CR."
-  type        = string
-  default     = ""
-}
