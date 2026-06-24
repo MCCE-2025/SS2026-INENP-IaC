@@ -15,6 +15,11 @@ resource "kubernetes_manifest" "argocd_project_platform" {
         "https://charts.jetstack.io",
         "https://kyverno.github.io/kyverno/",
         "https://kubernetes.github.io/ingress-nginx",
+        # Kargo (code promotion) is published as an OCI Helm chart on GHCR. Argo CD
+        # expects the OCI repo without the trailing chart name (chart = "kargo").
+        "oci://ghcr.io/akuity/kargo-charts",
+        # OpenBao (secret manager) Helm chart repository.
+        "https://openbao.github.io/openbao-helm",
       ]
       destinations = [
         {
