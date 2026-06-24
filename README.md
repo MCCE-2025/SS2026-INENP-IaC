@@ -391,7 +391,7 @@ Git or Terraform state.
    exists). Note your environment URL, e.g. `https://abc12345.live.dynatrace.com`.
 2. In **Access Tokens**, create two tokens:
    - **Operator token** — scopes: `installer-download`  ,
-     `entities.read`, `settings.read`, `settings.write`,
+     `entities.read`, `settings.read`, `settings.write`,`DataExport`,
      `activeGateTokenManagement.create`.
    - **Data ingest token** — scope: `metrics.ingest` (also `logs.ingest` /
      `openTelemetryTrace.ingest` if you want logs/traces).
