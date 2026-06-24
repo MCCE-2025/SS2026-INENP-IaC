@@ -165,6 +165,45 @@ not Crossplane-managed GCP resources:
 | Backend / frontend apps | `backend.yaml`, `frontend.yaml` |
 | Tenant workloads | `tenants.yaml` |
 
+## Cloud Load Balancing & ingress
+
+Cloud Load Balancing is **not** defined as first-class Terraform/Crossplane
+resources. It is created implicitly by Kubernetes objects that Argo CD syncs from
+the GitOps repo (`SS2026-INENP-GitOps`):
+
+- **GKE HTTP load balancing addon** is enabled in `cluster.tf`
+  (`addons_config.http_load_balancing`), so the cluster can program GCP load
+  balancers from Kubernetes `Service` / `Ingress` objects.
+- **ingress-nginx** is the single shared entrypoint. Its controller `Service` is
+  `type: LoadBalancer` (`argocd/applications/ingress-nginx.yaml`), which makes GKE
+  provision a **GCP L4 passthrough Network Load Balancer**. The Service is
+  annotated `external-dns.alpha.kubernetes.io/hostname: ingress.inenp.werschlan.at`,
+  so ExternalDNS publishes the DNS record for the LB's external IP. It installs at
+  sync-wave 5, ahead of cert-manager issuers and app ingresses, and registers the
+  default `nginx` IngressClass.
+- **All external traffic** flows: client → Cloud DNS → GCP L4 NLB → ingress-nginx
+  → app `ClusterIP` Services. There is no per-app L7 GCP load balancer; nginx does
+  the host/path routing inside the cluster.
+- **Frontend `Ingress` objects** (class `nginx`) terminate TLS via cert-manager
+  (`letsencrypt-prod`) and get a per-host ExternalDNS record:
+
+  | Ingress host | Source | Routing |
+  | --- | --- | --- |
+  | `weather.inenp.werschlan.at` | `apps/frontend/values.yaml` | `/` → frontend |
+  | `tenant-a.inenp.werschlan.at` | `tenants/tenant-a/frontend-values.yaml` | `/` → frontend, `/api` → backend |
+  | `tenant-z.inenp.werschlan.at` | `tenants/tenant-z/frontend-values.yaml` | `/` → frontend, `/api` → backend |
+  | `staging.inenp.werschlan.at` | `tenants/staging/frontend-values.yaml` | `/` → frontend, `/api` → backend |
+
+- **Backends** run as `ClusterIP` with `ingress.enabled: false` — they are never
+  exposed directly, only reachable in-cluster or through the frontend `/api` path.
+- **`dns-test`** (`platform/external-dns/manifests/service.yaml`, `dns-test.yaml`)
+  is a throwaway `Service` of `type: LoadBalancer` (`external-dns-test.inenp.werschlan.at`)
+  used to validate ExternalDNS; it provisions its own L4 NLB while enabled.
+
+**Net effect:** one shared GCP L4 Network Load Balancer (plus the optional
+`dns-test` one), not multiple GCP HTTP(S) load balancers. L7 routing and TLS are
+handled by ingress-nginx + cert-manager inside the cluster.
+
 ## Related documentation
 
 - [external-dns.md](external-dns.md) — ExternalDNS Workload Identity and GitOps setup

@@ -23,11 +23,12 @@ from diagrams import Cluster, Diagram, Edge
 from diagrams.gcp.compute import GKE, ComputeEngine
 from diagrams.gcp.database import SQL
 from diagrams.gcp.devtools import ContainerRegistry
-from diagrams.gcp.network import DNS, VirtualPrivateCloud
+from diagrams.gcp.network import DNS, LoadBalancing, VirtualPrivateCloud
 from diagrams.gcp.security import Iam, SecretManager
 from diagrams.gcp.storage import GCS
 from diagrams.k8s.compute import Deploy
 from diagrams.k8s.ecosystem import ExternalDns
+from diagrams.k8s.network import Ingress
 from diagrams.k8s.others import CRD
 from diagrams.k8s.podconfig import Secret
 from diagrams.onprem.ci import GithubActions
@@ -68,6 +69,7 @@ def main() -> None:
         graph_attr=GRAPH_ATTR,
     ):
         operator = User("Operator\n(gcloud / terraform / kubectl)")
+        end_user = User("End users\n(*.inenp.werschlan.at)")
 
         with Cluster("GitHub (MCCE-2025 org)"):
             iac_repo = Github("IaC repo\nSS2026-INENP-IaC")
@@ -112,6 +114,9 @@ def main() -> None:
 
             with Cluster("VPC platform-cluster-vpc"):
                 subnet = VirtualPrivateCloud("Subnet\n10.10.0.0/24 (europe-west3)")
+                nlb = LoadBalancing(
+                    "L4 Network Load Balancer\n(from ingress-nginx Service\ntype=LoadBalancer)"
+                )
 
                 with Cluster(
                     "GKE: platform-gke-cluster\n(Workload Identity, Managed Prometheus)"
@@ -144,9 +149,18 @@ def main() -> None:
                     with Cluster("namespace: external-dns (via GitOps)"):
                         external_dns = ExternalDns("ExternalDNS\n(deployed by Argo CD)")
 
+                    with Cluster("namespace: ingress-nginx (via GitOps)"):
+                        ingress_nginx = Deploy(
+                            "ingress-nginx controller\n(shared entrypoint, class=nginx)"
+                        )
+
                     with Cluster("namespaces: backend + tenants/*\n(auto-discovered)"):
+                        app_ingress = Ingress(
+                            "frontend Ingress\nweather / tenant-a / tenant-z / staging\n(TLS via cert-manager)"
+                        )
+                        frontend = Deploy("weather-app-frontend\n(ClusterIP)")
                         backend = Deploy(
-                            "weather-app-backend\n(+ Cloud SQL Auth Proxy)"
+                            "weather-app-backend\n(ClusterIP, + Cloud SQL Auth Proxy)"
                         )
 
         # --- Provisioning & operator flow ---------------------------------
@@ -179,7 +193,19 @@ def main() -> None:
         root_app >> Edge(label="deploys", style="dashed", color=GCP_GREEN) >> crossplane
         root_app >> Edge(label="deploys", style="dashed", color=GCP_GREEN) >> cert_manager
         root_app >> Edge(label="deploys", style="dashed", color=GCP_GREEN) >> external_dns
+        root_app >> Edge(label="deploys", style="dashed", color=GCP_GREEN) >> ingress_nginx
+        root_app >> Edge(label="deploys", style="dashed", color=GCP_GREEN) >> frontend
         root_app >> Edge(label="deploys", style="dashed", color=GCP_GREEN) >> backend
+
+        # --- North/south traffic & Cloud Load Balancing -------------------
+        # The L4 NLB is provisioned by the ingress-nginx Service (type=LoadBalancer);
+        # only the data path is drawn to keep the graph acyclic.
+        end_user >> Edge(label="HTTPS", color=GCP_BLUE) >> cloud_dns
+        cloud_dns >> Edge(label="resolves *.inenp.werschlan.at", style="dotted", color=GCP_GREEN) >> nlb
+        nlb >> Edge(label="forwards :80/:443", color=GCP_BLUE) >> ingress_nginx
+        ingress_nginx >> Edge(label="host/path routing", color=GCP_BLUE) >> app_ingress
+        app_ingress >> Edge(label="/", color=GCP_BLUE) >> frontend
+        app_ingress >> Edge(label="/api", color=GCP_BLUE) >> backend
 
         # --- External Secrets flow ----------------------------------------
         eso >> Edge(label="configures", color=GCP_RED) >> css
