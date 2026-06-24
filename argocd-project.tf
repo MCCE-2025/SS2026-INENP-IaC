@@ -15,12 +15,17 @@ resource "kubernetes_manifest" "argocd_project_platform" {
         "https://charts.jetstack.io",
         "https://kyverno.github.io/kyverno/",
         "https://kubernetes.github.io/ingress-nginx",
-        # Kargo (code promotion) is published as an OCI Helm chart on GHCR. Argo CD
-        # expects the OCI repo without the trailing chart name (chart = "kargo").
-        "oci://ghcr.io/akuity/kargo-charts",
         # OpenBao (secret manager) Helm chart repository.
         "https://openbao.github.io/openbao-helm",
-        # Dynatrace Operator (observability/APM) OCI Helm chart on public ECR.
+        # OCI Helm charts (Kargo, Dynatrace). Argo CD matches sourceRepos against the
+        # Application's repoURL, which for an OCI Helm source is written WITHOUT the
+        # "oci://" scheme. We list BOTH forms so the allowlist matches regardless of
+        # how Argo normalizes the scheme across versions.
+        # Kargo (code promotion) — OCI Helm chart on GHCR (chart = "kargo").
+        "ghcr.io/akuity/kargo-charts",
+        "oci://ghcr.io/akuity/kargo-charts",
+        # Dynatrace Operator (observability/APM) — OCI Helm chart on public ECR.
+        "public.ecr.aws/dynatrace",
         "oci://public.ecr.aws/dynatrace",
       ]
       destinations = [
