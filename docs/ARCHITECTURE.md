@@ -39,21 +39,30 @@ flowchart LR
     end
 
     subgraph GitOps["Argo CD (GitOps)"]
-        XP[Crossplane Helm]
+        XP[Crossplane Helm + GCP providers]
+        XComp[XRDs + Compositions]
         Apps[Apps / ingress / cert-manager / ExternalDNS]
     end
 
-    subgraph XPRes["Crossplane-managed GCP"]
-        SQL[Cloud SQL]
-        GAR[Artifact Registry]
-        GCS[Frontend GCS bucket]
+    subgraph XPRes["Crossplane-managed GCP resources"]
+        SQLI["Cloud SQL instance<br/>weather-app-db"]
+        SQLDB["Database + user<br/>weather_app"]
+        GARB["Artifact Registry<br/>weather-app-backend"]
+        GARF["Artifact Registry<br/>weather-app-frontend"]
+        GCS["GCS bucket<br/>static.inenp.werschlan.at"]
     end
 
     TF --> K8s
     K8s --> GitOps
     IAM -.->|WI bindings| XP
-    XP --> XPRes
-    SM -->|ESO syncs password| XPRes
+    XP --> XComp
+    XComp --> XPRes
+    XP --> SQLI
+    XP --> GARB
+    XP --> GARF
+    XP --> GCS
+    SQLI --> SQLDB
+    SM -.->|ESO syncs DB password| SQLDB
 ```
 
 ## Terraform (`SS2026-INENP-IaC`)

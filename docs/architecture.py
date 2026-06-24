@@ -81,16 +81,25 @@ def main() -> None:
             state_bucket = GCS("GCS state bucket\nterraform-state-<project_id>")
 
         with Cluster("Google Cloud project"):
-            with Cluster("Managed services"):
+            with Cluster("Managed services (Terraform / existing)"):
                 secret_manager = SecretManager(
                     "Secret Manager\nargocd-github-app-*\ncloud-sql-app-password\navwx-api-key"
                 )
                 cloud_dns = DNS("Cloud DNS\nmanaged zone (existing)")
-                artifact_registry = ContainerRegistry(
-                    "Artifact Registry\n(repos via Crossplane)"
+
+            with Cluster("Crossplane-managed GCP resources"):
+                gar_backend = ContainerRegistry(
+                    "Artifact Registry\nweather-app-backend"
                 )
-                cloud_sql = SQL("Cloud SQL\nbackend DB (via Crossplane)")
-                frontend_bucket = GCS("GCS bucket\nfrontend hosting (Crossplane)")
+                gar_frontend = ContainerRegistry(
+                    "Artifact Registry\nweather-app-frontend"
+                )
+                cloud_sql = SQL(
+                    "Cloud SQL weather-app-db\n+ database & user weather_app"
+                )
+                frontend_bucket = GCS(
+                    "GCS bucket\nstatic.inenp.werschlan.at"
+                )
 
             with Cluster("IAM / Workload Identity"):
                 wif_pool = Iam("WIF pool github-actions\n(OIDC, repo-scoped)")
@@ -125,6 +134,9 @@ def main() -> None:
                     with Cluster("namespace: crossplane-system (via GitOps)"):
                         crossplane = Deploy("Crossplane\n(+ GCP providers)")
                         xp_providers = CRD("provider-gcp\nartifact / sql / storage")
+                        xp_compositions = CRD(
+                            "XRDs + Compositions\n(XFrontendHosting, …)"
+                        )
 
                     with Cluster("namespace: cert-manager (via GitOps)"):
                         cert_manager = Deploy("cert-manager\n(DNS-01 ACME solver)")
@@ -152,8 +164,9 @@ def main() -> None:
         frontend_repo >> Edge(style="invis") >> gh_actions
         gh_actions >> Edge(label="OIDC token", style="dashed", color=GITHUB_DARK) >> wif_pool
         wif_pool >> Edge(label="impersonate (WIF)", style="dotted", color=GCP_YELLOW) >> sa_ci
-        sa_ci >> Edge(label="push images", color=GCP_BLUE) >> artifact_registry
-        artifact_registry >> Edge(label="pull images (node SA)", style="dotted", color=GCP_BLUE) >> node_pool
+        sa_ci >> Edge(label="push images", color=GCP_BLUE) >> gar_backend
+        sa_ci >> Edge(label="push images", color=GCP_BLUE) >> gar_frontend
+        gar_backend >> Edge(label="pull images (node SA)", style="dotted", color=GCP_BLUE) >> node_pool
 
         # --- Argo CD / GitOps ---------------------------------------------
         argocd >> Edge(label="defines", color=ARGO_ORANGE) >> project_platform
@@ -183,10 +196,14 @@ def main() -> None:
         sa_certmgr >> Edge(label="WI binding", style="dotted", color=GCP_YELLOW) >> cert_manager
 
         # --- Crossplane provisioning --------------------------------------
+        crossplane >> Edge(label="renders", color=XP_TEAL) >> xp_compositions
+        xp_compositions >> Edge(label="composes", style="dotted", color=XP_TEAL) >> xp_providers
         crossplane >> Edge(label="provisions", color=XP_TEAL) >> cloud_sql
-        crossplane >> Edge(label="provisions", color=XP_TEAL) >> artifact_registry
+        crossplane >> Edge(label="provisions", color=XP_TEAL) >> gar_backend
+        crossplane >> Edge(label="provisions", color=XP_TEAL) >> gar_frontend
         crossplane >> Edge(label="provisions", color=XP_TEAL) >> frontend_bucket
         sa_xp >> Edge(label="WI binding", style="dotted", color=GCP_YELLOW) >> xp_providers
+        secret_manager >> Edge(label="ESO syncs DB password", style="dotted", color=GCP_RED) >> cloud_sql
 
         # --- Backend Cloud SQL access -------------------------------------
         backend >> Edge(label="Auth Proxy (WI)", color=GCP_BLUE) >> cloud_sql
