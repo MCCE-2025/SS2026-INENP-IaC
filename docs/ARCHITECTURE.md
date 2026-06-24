@@ -130,7 +130,7 @@ bindings** that the Crossplane providers use.
 | SQL user `weather_app` | `platform/crossplane/cloud-sql-user.yaml` |
 | Artifact Registry `weather-app-backend` | `platform/crossplane/artifact-registry-backend.yaml` |
 | Artifact Registry `weather-app-frontend` | `platform/crossplane/artifact-registry-frontend.yaml` |
-| GCS bucket `static.inenp.werschlan.at` (frontend hosting) | `platform/crossplane/frontend-hosting.yaml` via `XFrontendHosting` composition |
+| GCS bucket `static.inenp.werschlan.at` | `platform/crossplane/frontend-hosting.yaml` (`XFrontendHosting`) |
 
 Crossplane also manages its own plumbing: GCP provider installs, `ProviderConfig`s,
 XRDs, Compositions, and the patch-and-transform function.
