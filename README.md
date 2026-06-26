@@ -50,41 +50,6 @@ printf 'Token <your-avwx-token>' | gcloud secrets versions add avwx-api-key --da
 
 See [docs/provisioning.md](docs/provisioning.md) for the full step-by-step flow.
 
----------------------------------------------------------------------------------
-
-## Project costs (GCP)
-
-Recalculated run-rate after configuration changes (status as of 23 June 2026).
-Source: GCP Billing export, 24 June 2026.
-
-### Summary
-
-| | Planned | Actual |
-| --- | ---: | ---: |
-| Daily run-rate (total) | €7.00 / day | €12.81 / day |
-| June spend (1–23 Jun) | — | €122.16 |
-| Estimated monthly run-rate | — | ~€385 (€12.81 × 30) |
-| June forecast (actual + 7 days remaining) | — | ~€212 |
-
-Requested budget for June: **$290**. Forecast ~€212 (~$229 at €1 = $1.08) — within budget.
-
-### Daily cost by service
-
-| Service | Planned / day | Actual / day |
-| --- | ---: | ---: |
-| Compute Engine | €3.36 | €6.97 |
-| Cloud SQL | €0.68 | €3.46 |
-| Kubernetes Engine (GKE) | €2.22 | €1.82 |
-| Networking + DNS | €0.74 | €0.56 |
-| **Total** | **€7.00** | **€12.81** |
-
-### Why actual costs are higher than planned
-
-1. **Cloud SQL** — instance went live on 22 June (was not running for the full billing period before that).
-2. **Compute Engine / GKE nodes** — node pool upgraded from `e2-medium` to `e2-standard-2` after CPU bottlenecks on the cluster.
-
-GKE management cost alone is slightly below plan; the increase comes mainly from Compute Engine and Cloud SQL.
-
 ## Access
 
 After provisioning, configure `kubectl` for the cluster:
